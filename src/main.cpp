@@ -1,6 +1,9 @@
 #include <iostream>
 
+#include <glad/glad.h>
 #include <glfw/glfw3.h>
+
+#include <cmath>
 
 int main() {
     if (!glfwInit()) {
@@ -17,7 +20,19 @@ int main() {
 
     glfwMakeContextCurrent(win);
 
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+        std::cout << "Failed to load glad\n";
+        return 1;
+    }
+
     while(!glfwWindowShouldClose(win)) {
+
+        float r = std::sin(glfwGetTime());
+        float g = std::sin(glfwGetTime() + 5);
+        float b = std::sin(glfwGetTime() + 10);
+
+        glClearColor(r, g, b, 1);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glfwPollEvents();
         glfwSwapBuffers(win);
