@@ -10,10 +10,11 @@ set(TITAN_LINK_LIBRARIES "")
 set(TITAN_SOURCES "")
 
 add_subdirectory("src")
+add_subdirectory("external")
 
 add_executable(${PROJECT_NAME} ${TITAN_SOURCES})
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "gcc")
     target_compile_options(${PROJECT_NAME} PUBLIC 
         "-std=c++17 -Wall -Werror -Wno-unused-declarations -Wno-unused-variable -Wno-unused-function"
     )
@@ -22,3 +23,6 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         "/std:c++17 /W0"
     )
 endif()
+
+target_include_directories(${PROJECT_NAME} PUBLIC ${TITAN_INCLUDE_DIRECTORIES})
+target_link_libraries(${PROJECT_NAME} PUBLIC ${TITAN_LINK_LIBRARIES})
