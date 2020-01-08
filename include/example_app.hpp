@@ -5,17 +5,17 @@
 #include <glad/glad.h>
 #include <glfw/glfw3.h>
 
-namespace titan {
-
 class Application {
 public:
-    Application(size_t width, size_t height);
+    Application(size_t const width, size_t const height);
     
     ~Application();
 
     void run();
 
-    float delta_time() const;
+    float delta_time() const {
+        return d_time;
+    }
 
 private:
     // Windowing
@@ -26,6 +26,5 @@ private:
     float last_frame_time = 0;
 };
 
-}
 
 #endif

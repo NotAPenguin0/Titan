@@ -9,9 +9,7 @@
 #include "renderer/util.hpp"
 #include "cinematic_camera.hpp"
 
-namespace titan {
-
-Application::Application(size_t width, size_t height) {
+Application::Application(size_t const width, size_t const height) {
     if (!glfwInit()) {
         throw std::runtime_error("Failed to initialize glfw");
     }
@@ -36,9 +34,11 @@ Application::~Application() {
 }
 
 void Application::run() {
-    unsigned int shader = renderer::load_shader("data/shaders/basic.vert", "data/shaders/basic.frag");
+    unsigned int shader = titan::renderer::load_shader(
+                "data/shaders/basic.vert", 
+                "data/shaders/basic.frag");
 
-    float vertices[] = {-1, -1, 0, 0, 1, 0, 1, -1, 0};
+    float const vertices[] = {-1, -1, 0, 0, 1, 0, 1, -1, 0};
     unsigned int vbo, vao;
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
@@ -53,12 +53,12 @@ void Application::run() {
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
     glm::mat4 model = glm::mat4(1.0);
 
-    auto camera = create_cinematic_camera<titan::OrbitCamera>(glm::vec3(0, 0, 0));
+    auto camera = titan::create_cinematic_camera<titan::OrbitCamera>(glm::vec3(0, 0, 0));
 
     float camera_height = 0;
 
     camera.rotation_speed = 0.3f;
-    camera.distance_to_target = glm::vec3(3, camera_height, 3);
+    camera.distance_to_target = glm::vec3(5, camera_height, 5);
 
     float cam_climb_speed = 0.0f;
 
@@ -95,6 +95,4 @@ void Application::run() {
         glfwPollEvents();
         glfwSwapBuffers(win);
     }
-}
-
 }
