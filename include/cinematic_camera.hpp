@@ -5,6 +5,13 @@
 
 namespace titan {
 
+/*
+template<typename T>
+concept CinematicCamera = requires(T cam) {
+    { cam.target } -> glm::vec3;
+};
+*/
+
 struct OrbitCamera {
     glm::vec3 target;
 
@@ -15,6 +22,17 @@ private:
 
     friend void update_cinematic_camera(OrbitCamera& camera, float delta_time);
     friend glm::mat4 get_view_matrix(OrbitCamera& camera, glm::vec3 world_up);
+};
+
+struct FollowCamera {
+    glm::vec3 target;
+
+    glm::vec3 distance_to_target = glm::vec3(1, 0, 1);
+private:
+    glm::vec3 position;
+
+    friend void update_cinematic_camera(FollowCamera& camera, float delta_time);
+    friend glm::mat4 get_view_matrix(FollowCamera& camera, glm::vec3 world_up);
 };
 
 template<typename T>
@@ -28,8 +46,10 @@ T create_cinematic_camera(glm::vec3 target = glm::vec3(0, 0, 0)) {
 }
 
 void update_cinematic_camera(OrbitCamera& camera, float delta_time);
+void update_cinematic_camera(FollowCamera& camera, float delta_time);
 
 glm::mat4 get_view_matrix(OrbitCamera& camera, glm::vec3 world_up);
+glm::mat4 get_view_matrix(FollowCamera& camera, glm::vec3 world_up);
 
 }
 

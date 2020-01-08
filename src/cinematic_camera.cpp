@@ -17,12 +17,29 @@ void update_cinematic_camera(OrbitCamera& camera, float delta_time) {
     camera.position.z = camera.target.z + std::cos(time * camera.rotation_speed) * camera.distance_to_target.z;
 }
 
+void update_cinematic_camera(FollowCamera& camera, float delta_time) {
+    camera.position = camera.target + camera.distance_to_target;
+}
+
 glm::mat4 get_view_matrix(OrbitCamera& camera, glm::vec3 world_up) {
     // calculate up vector for camera
     glm::vec3 direction = glm::normalize(camera.position - camera.target);
     glm::vec3 cam_right = glm::normalize(glm::cross(world_up, direction));
     glm::vec3 cam_up = glm::normalize(glm::cross(direction, cam_right));
 
+    // create view matrix
+    return glm::lookAt(camera.position, camera.target, cam_up);
+}
+
+glm::mat4 get_view_matrix(FollowCamera& camera, glm::vec3 world_up) {
+    // Identical to OrbitCamera
+
+    // calculate up vector for camera
+    glm::vec3 direction = glm::normalize(camera.position - camera.target);
+    glm::vec3 cam_right = glm::normalize(glm::cross(world_up, direction));
+    glm::vec3 cam_up = glm::normalize(glm::cross(direction, cam_right));
+
+    // create view matrix
     return glm::lookAt(camera.position, camera.target, cam_up);
 }
 

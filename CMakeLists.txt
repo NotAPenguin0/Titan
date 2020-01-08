@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.12)
 project(Titan)
 
 enable_language(CXX)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 set(TITAN_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/include")
 set(TITAN_LINK_LIBRARIES "")
@@ -16,11 +16,11 @@ add_executable(${PROJECT_NAME} ${TITAN_SOURCES})
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "gcc")
     target_compile_options(${PROJECT_NAME} PUBLIC 
-        "-std=c++17 -Wall -Werror -Wno-unused-declarations -Wno-unused-variable -Wno-unused-function"
+        "-std=c++2a -Wall -Werror -Wno-unused-declarations -Wno-unused-variable -Wno-unused-function"
     )
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(${PROJECT_NAME} PUBLIC 
-        "/std:c++17 /W0"
+        "/std:c++20 /W0"
     )
 endif()
 
