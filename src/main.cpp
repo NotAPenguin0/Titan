@@ -7,6 +7,12 @@
 #include <exception>
 #include <fstream>
 
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include "cinematic_camera.hpp"
+
 std::string read_file(const char* path) {
     using namespace std::literals::string_literals;
     std::ifstream f(path);
@@ -97,18 +103,47 @@ int main() try {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
     glEnableVertexAttribArray(0);
 
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+    glm::mat4 model = glm::mat4(1.0);
+
+    auto camera = titan::create_cinematic_camera<titan::OrbitCamera>(glm::vec3(0, 0, 0));
+
+    float camera_height = 0;
+
+    camera.rotation_speed = 0.3f;
+    camera.distance_to_target = glm::vec3(3, camera_height, 3);
+
+    float cam_climb_speed = 0.3f;
+
+    float last_frame = 0;
+
     while(!glfwWindowShouldClose(win)) {
+        float frame_time = glfwGetTime();
+        float delta_time = frame_time - last_frame;
+        last_frame = frame_time;
+
+        camera_height += cam_climb_speed * delta_time;
+        camera.distance_to_target.y = camera_height;
+
         float r = std::sin(glfwGetTime());
         float g = std::sin(glfwGetTime() + 5);
         float b = std::sin(glfwGetTime() + 10);
 
         float rgb[] = {r, g, b};
 
+        titan::update_cinematic_camera(camera, delta_time);
+
+        glm::mat4 view = titan::get_view_matrix(camera, glm::vec3(0, 1, 0));
+
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(shader);
         glUniform3fv(0, 1, rgb);
+
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(projection));
 
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
