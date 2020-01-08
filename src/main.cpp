@@ -113,7 +113,7 @@ int main() try {
     camera.rotation_speed = 0.3f;
     camera.distance_to_target = glm::vec3(3, camera_height, 3);
 
-    float cam_climb_speed = 0.3f;
+    float cam_climb_speed = 0.0f;
 
     float last_frame = 0;
 
