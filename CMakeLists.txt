@@ -16,7 +16,7 @@ add_executable(${PROJECT_NAME} ${TITAN_SOURCES})
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "gcc")
     target_compile_options(${PROJECT_NAME} PUBLIC 
-        "-std=c++2a -Wall -Werror -Wno-unused-declarations -Wno-unused-variable -Wno-unused-function"
+        "-std=c++2a" "-Wall" "-Werror" "-Wno-unused-declarations" "-Wno-unused-variable" "-Wno-unused-function"
     )
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(${PROJECT_NAME} PUBLIC 

@@ -5,12 +5,7 @@
 
 namespace titan {
 
-/*
-template<typename T>
-concept CinematicCamera = requires(T cam) {
-    { cam.target } -> glm::vec3;
-};
-*/
+// TODO: Add concepts
 
 struct OrbitCamera {
     glm::vec3 target;
