@@ -13,9 +13,7 @@ public:
 
     void run();
 
-    float delta_time() const {
-        return d_time;
-    }
+    float delta_time() const;
 
 private:
     // Windowing

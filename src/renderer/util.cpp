@@ -1,6 +1,7 @@
 #include "renderer/util.hpp"
 
 #include <glad/glad.h>
+#include <stb/stb_image.h>
 
 #include <fstream>
 #include <string>
@@ -60,6 +61,25 @@ unsigned int load_shader(const char* vtx_path, const char* frag_path) {
     glDeleteShader(frag);
 
     return prog;
+}
+
+unsigned int load_texture(const char* path) {
+    stbi_set_flip_vertically_on_load(true);
+    int w, h, channels;
+    unsigned char* data = stbi_load(path, &w, &h, &channels, 4);
+
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_image_free(data);
+    
+    return texture;
 }
 
 

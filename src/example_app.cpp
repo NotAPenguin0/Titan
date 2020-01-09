@@ -38,17 +38,33 @@ void Application::run() {
                 "data/shaders/basic.vert", 
                 "data/shaders/basic.frag");
 
+    unsigned int tex = titan::renderer::load_texture("data/textures/pengu.png");
+
     float const vertices[] = {-1, -1, 0, 0, 1, 0, 1, -1, 0};
+    float const tex_coords[] = {0, 0, 0.5, 1, 1, 0};
     unsigned int vbo, vao;
+    unsigned int texcoords_buf;
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
+    glGenBuffers(1, &texcoords_buf);
 
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), vertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glVertexAttribFormat(0, 3, GL_FLOAT, GL_FALSE, 0);
+    glBindVertexBuffer(0, vbo, 0, 3 * sizeof(float));
+    glVertexAttribBinding(0, 0);
     glEnableVertexAttribArray(0);
+
+    // Texcoords
+    glBindBuffer(GL_ARRAY_BUFFER, texcoords_buf);
+    glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), tex_coords, GL_STATIC_DRAW);
+
+    glVertexAttribFormat(1, 2, GL_FLOAT, GL_FALSE, 0);
+    glBindVertexBuffer(1, texcoords_buf, 0, 2 * sizeof(float));
+    glVertexAttribBinding(1, 1);
+    glEnableVertexAttribArray(1);
 
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
     glm::mat4 model = glm::mat4(1.0);
@@ -64,10 +80,10 @@ void Application::run() {
 
     while(!glfwWindowShouldClose(win)) {
         float frame_time = glfwGetTime();
-        float delta_time = frame_time - last_frame_time;
+        d_time = frame_time - last_frame_time;
         last_frame_time = frame_time;
 
-        camera_height += cam_climb_speed * delta_time;
+        camera_height += cam_climb_speed * delta_time();
         camera.distance_to_target.y = camera_height;
 
         float r = std::sin(glfwGetTime());
@@ -76,7 +92,7 @@ void Application::run() {
 
         float rgb[] = {r, g, b};
 
-        titan::update_cinematic_camera(camera, delta_time);
+        titan::update_cinematic_camera(camera, delta_time());
 
         glm::mat4 view = titan::get_view_matrix(camera, glm::vec3(0, 1, 0));
 
@@ -90,9 +106,17 @@ void Application::run() {
         glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(projection));
 
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glUniform1i(4, 0);
+
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
         glfwPollEvents();
         glfwSwapBuffers(win);
     }
+}
+
+float Application::delta_time() const {
+    return d_time;
 }
