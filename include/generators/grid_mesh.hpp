@@ -8,7 +8,6 @@
 // TODO:
 /*
     User-provided buffer/allocation function
-    Texturing mode (stretch/repeat)
 */
 
 namespace titan {

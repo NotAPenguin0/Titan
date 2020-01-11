@@ -34,8 +34,6 @@ GridMesh generate_grid_mesh(float const width, float const height, size_t const 
             mesh.vertices[base_index] = x_pos;
             mesh.vertices[base_index + 1] = y_pos;
             // TexCoords
-            // Current algorithm stretches the texture over the entire grid.
-            // We eventually want to offer more customization options, like repeating the texture every N cells
             mesh.vertices[base_index + 2] = x_pos / (tex_mode == TextureMode::Stretch ? width : 1);
             mesh.vertices[base_index + 3] = y_pos / (tex_mode == TextureMode::Stretch ? height : 1);
         }

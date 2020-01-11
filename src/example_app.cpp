@@ -10,6 +10,7 @@
 #include "cinematic_camera.hpp"
 
 #include "generators/grid_mesh.hpp"
+#include "generators/noise.hpp"
 
 Application::Application(size_t const width, size_t const height) {
     if (!glfwInit()) {
@@ -63,6 +64,10 @@ void Application::run() {
 
     titan::generators::GridMesh mesh = titan::generators::generate_grid_mesh(grid_size, grid_size, 10 * grid_size);
 
+    titan::generators::PerlinNoise noise(3);
+    auto buf = noise.get_buffer(128, 128);
+    unsigned int noise_tex = titan::renderer::texture_from_buffer(buf.data(), 128, 128);
+
     unsigned int vao;
     unsigned int vbo; 
     unsigned int ebo;
@@ -112,7 +117,7 @@ void Application::run() {
         glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(projection));
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, tex);
+        glBindTexture(GL_TEXTURE_2D, noise_tex);
         glUniform1i(3, 0);
 
         glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, nullptr);

@@ -4,7 +4,6 @@
 #include "example_app.hpp"
 
 int main() try {
-
     Application app(800, 600);
     app.run();
 
