@@ -35,6 +35,9 @@ static unsigned int create_shader_stage(GLenum stage, const char* source) {
     return shader;
 }
 
+void set_wireframe(bool wireframe) {
+    glPolygonMode(GL_FRONT_AND_BACK, wireframe ? GL_LINE : GL_FILL);
+}
 
 unsigned int load_shader(const char* vtx_path, const char* frag_path) {
     using namespace std::literals::string_literals;
