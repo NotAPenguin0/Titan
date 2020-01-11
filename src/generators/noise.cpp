@@ -42,22 +42,31 @@ static float dot_grid_gradient(int ix, int iy, float x, float y, PerlinNoise::gr
 
 PerlinNoise::PerlinNoise(size_t scale /* = 1*/) : gradients(scale, scale), scale(scale) {}
 
-std::vector<unsigned char> PerlinNoise::get_buffer(size_t w, size_t h)  const {
+std::vector<unsigned char> PerlinNoise::get_buffer(size_t w, size_t h, size_t octaves) {
     std::vector<unsigned char> buffer(w * h, 0);
-    get_buffer(buffer.data(), w, h);
+    get_buffer(buffer.data(), w, h, octaves);
     return buffer;
 }
 
-void PerlinNoise::get_buffer(unsigned char* buffer, size_t w, size_t h) const {
+void PerlinNoise::get_buffer(unsigned char* buffer, size_t w, size_t h, size_t octaves) {
     static float perlin_2d_min = -std::sqrt(0.5f);
     static float perlin_2d_max = std::sqrt(0.5f);
-    for (int y = 0; y < h; ++y) {
-        for (int x = 0; x < w; ++x) {
-            int i = y * w + x;
-            float val = value((float)x / w * scale, (float)y / h * scale);
-            val = map_value(val, perlin_2d_min, perlin_2d_max, 0.0f, 1.0f);
-            val *= 255;
-            buffer[i] = val;
+    
+    float amplitude = 1.0f;
+    float persistence = 0.5f;
+
+    for (size_t octave = 0; octave < octaves; ++octave) {
+        regenerate_gradients(std::pow(2, octave));
+        amplitude *= persistence;
+        for (int y = 0; y < h; ++y) {
+            for (int x = 0; x < w; ++x) {
+                int i = y * w + x;
+                float val = value((float)x / w * scale, (float)y / h * scale);
+                val = amplitude * map_value(val, perlin_2d_min, perlin_2d_max, 0.0f, 1.0f);
+                // Map value to range of 0-255
+                val *= 255;
+                buffer[i] += val;
+            }
         }
     }
 }
@@ -85,6 +94,15 @@ float PerlinNoise::value(float x, float y) const {
 
     value = perlin_lerp(ix0, ix1, sy);
     return value;
+}
+
+void PerlinNoise::regenerate_gradients() {
+    regenerate_gradients(scale);
+}
+
+void PerlinNoise::regenerate_gradients(size_t new_scale) {
+    gradients = gradient_grid(new_scale, new_scale);
+    scale = new_scale;
 }
 
 }

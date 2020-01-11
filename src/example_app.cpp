@@ -37,7 +37,7 @@ Application::~Application() {
 }
 
 void Application::run() {
-    titan::renderer::set_wireframe(true);
+    titan::renderer::set_wireframe(false);
 
     unsigned int shader = titan::renderer::load_shader(
                 "data/shaders/grid.vert", 
@@ -45,28 +45,28 @@ void Application::run() {
 
     unsigned int tex = titan::renderer::load_texture("data/textures/pengu.png");
 
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 500.0f);
     glm::mat4 model = glm::mat4(1.0);
 
     model = glm::translate(model, glm::vec3(0, 0, 0));
     model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1, 0, 0));
 
-    float const grid_size = 10.0f;
+    float const grid_size = 50.0f;
 
     auto camera = titan::create_cinematic_camera<titan::OrbitCamera>(glm::vec3(grid_size / 2, 0, grid_size / 2));
 
-    float camera_height = grid_size;
+    float camera_height = 20;
 
     camera.rotation_speed = 0.3f;
-    camera.distance_to_target = glm::vec3(grid_size + 5, camera_height, grid_size + 5);
+    camera.distance_to_target = glm::vec3(grid_size + 40, camera_height, grid_size + 40);
 
     float cam_climb_speed = 0.0f;
 
     titan::generators::GridMesh mesh = titan::generators::generate_grid_mesh(grid_size, grid_size, 10 * grid_size);
 
-    titan::generators::PerlinNoise noise(3);
-    auto buf = noise.get_buffer(128, 128);
-    unsigned int noise_tex = titan::renderer::texture_from_buffer(buf.data(), 128, 128);
+    titan::generators::PerlinNoise noise(1);
+    auto buf = noise.get_buffer(1024, 1024, 8);
+    unsigned int noise_tex = titan::renderer::texture_from_buffer(buf.data(), 1024, 1024);
 
     unsigned int vao;
     unsigned int vbo; 
