@@ -64,7 +64,7 @@ void Application::run() {
     titan::generators::GridMesh mesh = titan::generators::generate_grid_mesh(grid_size, grid_size, 10 * grid_size);
 
     unsigned int vao;
-    unsigned int vbo;
+    unsigned int vbo; 
     unsigned int ebo;
 
     glGenVertexArrays(1, &vao);

@@ -6,7 +6,7 @@ static size_t index_2d(size_t const x, size_t const y, size_t const w) {
     return y * w + x;
 }
 
-GridMesh generate_grid_mesh(float const width, float const height, size_t const resolution) {
+GridMesh generate_grid_mesh(float const width, float const height, size_t const resolution, TextureMode tex_mode) {
     GridMesh mesh;
 
     // Calculate cell size
@@ -36,8 +36,8 @@ GridMesh generate_grid_mesh(float const width, float const height, size_t const 
             // TexCoords
             // Current algorithm stretches the texture over the entire grid.
             // We eventually want to offer more customization options, like repeating the texture every N cells
-            mesh.vertices[base_index + 2] = x_pos / width;
-            mesh.vertices[base_index + 3] = y_pos / height;
+            mesh.vertices[base_index + 2] = x_pos / (tex_mode == TextureMode::Stretch ? width : 1);
+            mesh.vertices[base_index + 3] = y_pos / (tex_mode == TextureMode::Stretch ? height : 1);
         }
     }
 
