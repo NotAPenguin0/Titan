@@ -37,7 +37,7 @@ Application::~Application() {
 }
 
 void Application::run() {
-    titan::renderer::set_wireframe(false);
+    titan::renderer::set_wireframe(true);
 
     unsigned int shader = titan::renderer::load_shader(
                 "data/shaders/grid.vert", 
@@ -51,22 +51,23 @@ void Application::run() {
     model = glm::translate(model, glm::vec3(0, 0, 0));
     model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1, 0, 0));
 
-    float const grid_size = 50.0f;
+    float const grid_size = 5.0f;
 
     auto camera = titan::create_cinematic_camera<titan::OrbitCamera>(glm::vec3(grid_size / 2, 0, grid_size / 2));
 
-    float camera_height = 20;
+    float camera_height = 3;
 
     camera.rotation_speed = 0.3f;
-    camera.distance_to_target = glm::vec3(grid_size + 40, camera_height, grid_size + 40);
+    camera.distance_to_target = glm::vec3(grid_size + 5, camera_height, grid_size + 5);
 
     float cam_climb_speed = 0.0f;
 
     titan::generators::GridMesh mesh = titan::generators::generate_grid_mesh(grid_size, grid_size, 10 * grid_size);
 
     titan::generators::PerlinNoise noise(1);
-    auto buf = noise.get_buffer(1024, 1024, 8);
-    unsigned int noise_tex = titan::renderer::texture_from_buffer(buf.data(), 1024, 1024);
+    size_t const noise_size = 128;
+    auto buf = noise.get_buffer(noise_size, noise_size, 8);
+    unsigned int noise_tex = titan::renderer::texture_from_buffer(buf.data(), noise_size, noise_size);
 
     unsigned int vao;
     unsigned int vbo; 
