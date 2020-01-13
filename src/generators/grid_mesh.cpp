@@ -6,7 +6,7 @@ static size_t index_2d(size_t const x, size_t const y, size_t const w) {
     return y * w + x;
 }
 
-GridMesh generate_grid_mesh(float const width, float const height, size_t const resolution, TextureMode tex_mode) {
+GridMesh create_grid_mesh(float const width, float const height, size_t const resolution, TextureMode tex_mode) {
     GridMesh mesh;
 
     // Calculate cell size

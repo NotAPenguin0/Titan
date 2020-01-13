@@ -1,6 +1,7 @@
 #ifndef TITAN_EXAMPLE_APP_HPP_
 #define TITAN_EXAMPLE_APP_HPP_
 
+
 #include <glad/glad.h>
 #include <glfw/glfw3.h>
 
@@ -21,8 +22,6 @@ private:
     // Timing
     float d_time = 0;
     float last_frame_time = 0;
-
-
 };
 
 

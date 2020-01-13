@@ -9,8 +9,7 @@
 #include "renderer/util.hpp"
 #include "cinematic_camera.hpp"
 
-#include "generators/grid_mesh.hpp"
-#include "generators/noise.hpp"
+#include "generators/heightmap_terrain.hpp"
 
 Application::Application(size_t const width, size_t const height) {
     if (!glfwInit()) {
@@ -39,9 +38,12 @@ Application::~Application() {
 void Application::run() {
     titan::renderer::set_wireframe(true);
 
+    // Load shaders
     unsigned int shader = titan::renderer::load_shader(
                 "data/shaders/grid.vert", 
                 "data/shaders/basic.frag");
+
+    // Create transformation matrices
 
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 500.0f);
     glm::mat4 model = glm::mat4(1.0);
@@ -49,23 +51,18 @@ void Application::run() {
     model = glm::translate(model, glm::vec3(0, 0, 0));
     model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1, 0, 0));
 
+    // Create terrain
+
     float const grid_size = 5.0f;
-    titan::GridMesh mesh = titan::generate_grid_mesh(grid_size, grid_size, 10 * grid_size);
 
-    auto camera = titan::create_cinematic_camera<titan::OrbitCamera>(glm::vec3(grid_size / 2, 0, grid_size / 2));
-
-    float camera_height = 3;
-
-    camera.rotation_speed = 0.3f;
-    camera.distance_to_target = glm::vec3(grid_size + 5, camera_height, grid_size + 5);
-
-    float cam_climb_speed = 0.0f;
-
-
-    titan::PerlinNoise noise(1);
-    size_t const noise_size = 256;
-    auto buf = noise.get_buffer(noise_size, noise_size, 8);
-    unsigned int noise_tex = titan::renderer::texture_from_buffer(buf.data(), noise_size, noise_size);
+    titan::HeightmapTerrainInfo info;
+    info.width = grid_size;
+    info.height = grid_size;
+    info.resolution = 10 * grid_size;
+    
+    titan::HeightmapTerrain terrain = titan::create_heightmap_terrain(info);
+    
+    unsigned int noise_tex = titan::renderer::texture_from_buffer(terrain.height_map.data(), info.noise_size, info.noise_size);
 
     unsigned int vao;
     unsigned int vbo; 
@@ -76,23 +73,38 @@ void Application::run() {
     glGenBuffers(1, &ebo);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(float), mesh.vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, terrain.mesh.vertices.size() * sizeof(float), 
+                terrain.mesh.vertices.data(), GL_STATIC_DRAW);
     
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int), mesh.indices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, terrain.mesh.indices.size() * sizeof(unsigned int), 
+                terrain.mesh.indices.data(), GL_STATIC_DRAW);
 
     glBindVertexArray(vao);
 
+    // Positions
     glEnableVertexAttribArray(0);
     glVertexAttribFormat(0, 2, GL_FLOAT, GL_FALSE, 0);
     glVertexAttribBinding(0, 0);
     glBindVertexBuffer(0, vbo, 0, 4 * sizeof(float));
 
+    // TexCoords
     glEnableVertexAttribArray(1);
     glVertexAttribFormat(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float));
     glVertexAttribBinding(1, 1);
     glBindVertexBuffer(1, vbo, 0, 4 * sizeof(float));
     glVertexArrayElementBuffer(vao, ebo);
+
+    // Create camera
+
+    auto camera = titan::create_cinematic_camera<titan::OrbitCamera>(glm::vec3(grid_size / 2, 0, grid_size / 2));
+
+    float camera_height = 3;
+
+    camera.rotation_speed = 0.3f;
+    camera.distance_to_target = glm::vec3(grid_size + 5, camera_height, grid_size + 5);
+
+    float cam_climb_speed = 0.0f;
 
     while(!glfwWindowShouldClose(win)) {
         float frame_time = glfwGetTime();
@@ -119,7 +131,7 @@ void Application::run() {
         glBindTexture(GL_TEXTURE_2D, noise_tex);
         glUniform1i(3, 0);
 
-        glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, nullptr);
+        glDrawElements(GL_TRIANGLES, terrain.mesh.indices.size(), GL_UNSIGNED_INT, nullptr);
 
         glfwPollEvents();
         glfwSwapBuffers(win);

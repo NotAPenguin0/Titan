@@ -12,6 +12,7 @@ set(TITAN_SOURCES
     # Generators module
     "${CMAKE_CURRENT_SOURCE_DIR}/generators/grid_mesh.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/generators/noise.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/generators/heightmap_terrain.cpp"
 
     # stb_image
     "${CMAKE_CURRENT_SOURCE_DIR}/renderer/stb_image.cpp"
