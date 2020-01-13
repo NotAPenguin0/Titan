@@ -1,11 +1,11 @@
 #version 450 core
 
-layout(location = 3) uniform sampler2D tex;
+in vec2 TexCoords;
 
 out vec4 FragColor;
 
-in vec2 TexCoords;
+
 
 void main() {   
-    FragColor = vec4(1, 0, 0, 1.0);
+    gl_Position = vec4(1, 0, 0, 1);
 }

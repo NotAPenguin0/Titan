@@ -7,7 +7,7 @@ namespace renderer {
 
 void set_wireframe(bool wireframe);
 
-unsigned int load_shader(const char* vtx_path, const char* frag_path);
+unsigned int load_shader(const char* vtx_path, const char* frag_path, const char* geom_path = nullptr);
 
 unsigned int load_texture(const char* path);
 

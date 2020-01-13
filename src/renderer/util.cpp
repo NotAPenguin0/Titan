@@ -39,7 +39,7 @@ void set_wireframe(bool wireframe) {
     glPolygonMode(GL_FRONT_AND_BACK, wireframe ? GL_LINE : GL_FILL);
 }
 
-unsigned int load_shader(const char* vtx_path, const char* frag_path) {
+unsigned int load_shader(const char* vtx_path, const char* frag_path, const char* geom_path /* = nullptr*/) {
     using namespace std::literals::string_literals;
     std::string vertex = read_file(vtx_path);
     std::string fragment = read_file(frag_path);
@@ -49,6 +49,14 @@ unsigned int load_shader(const char* vtx_path, const char* frag_path) {
     unsigned int prog = glCreateProgram();
     glAttachShader(prog, vtx);
     glAttachShader(prog, frag);
+
+    unsigned int geom = 0;
+
+    if (geom_path) {
+        std::string geometry = read_file(geom_path);
+        geom = create_shader_stage(GL_GEOMETRY_SHADER, geometry.c_str());
+        glAttachShader(prog, geom);
+    }
 
     glLinkProgram(prog);
     int success;
@@ -62,6 +70,10 @@ unsigned int load_shader(const char* vtx_path, const char* frag_path) {
 
     glDeleteShader(vtx);
     glDeleteShader(frag);
+
+    if (geom_path) {
+        glDeleteShader(geom);
+    }
 
     return prog;
 }
