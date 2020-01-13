@@ -3,14 +3,11 @@
 
 namespace titan {
 
-namespace generators {
-
 enum class TextureMode {
     Stretch,
     Repeat
 };
 
-}
 
 }
 

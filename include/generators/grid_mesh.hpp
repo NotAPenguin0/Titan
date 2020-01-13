@@ -12,8 +12,6 @@
 
 namespace titan {
 
-namespace generators {
-
 /* GridMesh vertex layout:
 Vertex 0                Vertex 1
 Position    TexCoords   Position    TexCoords    
@@ -35,8 +33,6 @@ struct GridMesh {
  */
 GridMesh generate_grid_mesh(float width, float height, size_t resolution, TextureMode tex_mode = TextureMode::Stretch);
 
-
-}
 
 }
 

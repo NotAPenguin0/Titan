@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-namespace titan::generators {
+namespace titan {
 
 using namespace math;
 

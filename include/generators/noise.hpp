@@ -7,8 +7,6 @@
 
 namespace titan {
 
-namespace generators {
-
 class PerlinNoise {
 public:
     PerlinNoise(size_t scale = 1);
@@ -43,7 +41,6 @@ private:
     size_t scale;
 };
 
-}
 
 }
 

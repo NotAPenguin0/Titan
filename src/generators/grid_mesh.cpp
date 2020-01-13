@@ -1,6 +1,6 @@
 #include "generators/grid_mesh.hpp"
 
-namespace titan::generators {
+namespace titan {
 
 static size_t index_2d(size_t const x, size_t const y, size_t const w) {
     return y * w + x;
