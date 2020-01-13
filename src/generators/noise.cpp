@@ -6,14 +6,14 @@ namespace titan {
 
 using namespace math;
 
-PerlinNoise::gradient_grid::gradient_grid(size_t w, size_t h) {
+PerlinNoise::gradient_grid::gradient_grid(size_t w, size_t h, std::mt19937& engine) {
     ++w;
     ++h;
     size.x = w;
     size.y = h;
     gradients.resize(w * h);
     for (int i = 0; i < w * h; ++i) {
-        gradients[i] = normalize(vec2::random());
+        gradients[i] = normalize(vec2::random(engine));
     }
 }
 
@@ -40,7 +40,7 @@ static float dot_grid_gradient(int ix, int iy, float x, float y, PerlinNoise::gr
     return (dx * gradient.x + dy * gradient.y);
 }
 
-PerlinNoise::PerlinNoise(size_t scale /* = 1*/) : gradients(scale, scale), scale(scale) {}
+PerlinNoise::PerlinNoise(size_t seed) : seed(seed), random_engine(seed) {}
 
 std::vector<unsigned char> PerlinNoise::get_buffer(size_t w, size_t h, size_t octaves) {
     std::vector<unsigned char> buffer(w * h, 0);
@@ -101,7 +101,7 @@ void PerlinNoise::regenerate_gradients() {
 }
 
 void PerlinNoise::regenerate_gradients(size_t new_scale) {
-    gradients = gradient_grid(new_scale, new_scale);
+    gradients = gradient_grid(new_scale, new_scale, random_engine);
     scale = new_scale;
 }
 

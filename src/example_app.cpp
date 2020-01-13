@@ -5,6 +5,9 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <stdexcept>
+#include <random>
+#include <iostream>
+#include <chrono>
 
 #include "renderer/util.hpp"
 #include "cinematic_camera.hpp"
@@ -36,7 +39,7 @@ Application::~Application() {
 }
 
 void Application::run() {
-    titan::renderer::set_wireframe(true);
+    titan::renderer::set_wireframe(false);
 
     // Load shaders
     unsigned int shader = titan::renderer::load_shader(
@@ -59,9 +62,18 @@ void Application::run() {
     info.width = grid_size;
     info.height = grid_size;
     info.resolution = 10 * grid_size;
+    info.noise_seed = std::random_device()();
     
+    using namespace std::chrono;
+
+    milliseconds start_time = duration_cast<milliseconds>(high_resolution_clock::now().time_since_epoch());
+
     titan::HeightmapTerrain terrain = titan::create_heightmap_terrain(info);
     
+    std::chrono::milliseconds end_time = duration_cast<milliseconds>(high_resolution_clock::now().time_since_epoch());
+
+    std::cout << "Generated terrain in " << (end_time - start_time).count() << " ms" << std::endl;
+
     unsigned int noise_tex = titan::renderer::texture_from_buffer(terrain.height_map.data(), info.noise_size, info.noise_size);
 
     unsigned int vao;
@@ -86,13 +98,21 @@ void Application::run() {
     glEnableVertexAttribArray(0);
     glVertexAttribFormat(0, 2, GL_FLOAT, GL_FALSE, 0);
     glVertexAttribBinding(0, 0);
-    glBindVertexBuffer(0, vbo, 0, 4 * sizeof(float));
+    glBindVertexBuffer(0, vbo, 0, 7 * sizeof(float));
 
     // TexCoords
     glEnableVertexAttribArray(1);
     glVertexAttribFormat(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float));
     glVertexAttribBinding(1, 1);
-    glBindVertexBuffer(1, vbo, 0, 4 * sizeof(float));
+    glBindVertexBuffer(1, vbo, 0, 7 * sizeof(float));
+
+    // Normals
+    glEnableVertexAttribArray(2);
+    glVertexAttribFormat(2, 3, GL_FLOAT, GL_FALSE, 4 * sizeof(float));
+    glVertexAttribBinding(2, 2);
+    glBindVertexBuffer(2, vbo, 0, 7 * sizeof(float));
+
+    // Index buffer
     glVertexArrayElementBuffer(vao, ebo);
 
     // Create camera

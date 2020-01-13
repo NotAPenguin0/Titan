@@ -11,6 +11,14 @@ namespace titan {
 struct HeightmapTerrain {
     GridMesh mesh;
     std::vector<unsigned char> height_map;
+
+    // Misc  info
+
+    float width;
+    float height;
+
+    size_t heightmap_width;
+    size_t heightmap_height;
 };
 
 struct HeightmapTerrainInfo {
@@ -18,7 +26,7 @@ struct HeightmapTerrainInfo {
 
     // The width of the terrain mesh, in worldspace coordinates
     float width;
-    // The height of the terrain mesh, in worldspace coordadinates
+    // The height of the terrain mesh, in worldspace coordinates
     float height;
     // The amount of vertices in each row/column.
     size_t resolution;
@@ -26,6 +34,7 @@ struct HeightmapTerrainInfo {
     TextureMode texture_mode = TextureMode::Stretch;
 
     // Noise options
+    size_t noise_seed;
     size_t noise_size = 256;
     size_t noise_layers = 8;
 };

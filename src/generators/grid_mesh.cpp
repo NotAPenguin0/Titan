@@ -1,10 +1,10 @@
 #include "generators/grid_mesh.hpp"
 
+#include "math.hpp"
+
 namespace titan {
 
-static size_t index_2d(size_t const x, size_t const y, size_t const w) {
-    return y * w + x;
-}
+using namespace math;
 
 GridMesh create_grid_mesh(float const width, float const height, size_t const resolution, TextureMode tex_mode) {
     GridMesh mesh;
@@ -15,13 +15,13 @@ GridMesh create_grid_mesh(float const width, float const height, size_t const re
 
     // We will allocate the grid 1 cell larger than requested. Otherwise, we can't complete the final row/column.
     size_t const vertex_count = (resolution + 1) * (resolution + 1);
-    // A vertex consists of one vec2 for the position and one vec2 for the texture coordinates, which
-    // makes 4 elements
-    size_t const vertex_size = 4;
+
+    // Position + TexCoord + Normal
+    size_t const vertex_size = 2 + 2 + 3;
     size_t const vertices_per_quad = 6;
 
-    // Allocate memory
-    mesh.vertices.resize(vertex_count * vertex_size);
+    // Allocate memory, make sure to zero initialize the vertices
+    mesh.vertices = std::vector<float>(vertex_count * vertex_size, 0);
     mesh.indices.resize(resolution * resolution * vertices_per_quad);
 
     // Fill vertex buffer
@@ -51,8 +51,8 @@ GridMesh create_grid_mesh(float const width, float const height, size_t const re
             mesh.indices[base_index + 2] = index_2d(x + 1, y + 1, resolution + 1);
             // Second triangle
             mesh.indices[base_index + 3] = index_2d(x, y, resolution + 1);
-            mesh.indices[base_index + 4] = index_2d(x + 1, y, resolution + 1);
-            mesh.indices[base_index + 5] = index_2d(x + 1, y + 1, resolution + 1);
+            mesh.indices[base_index + 4] = index_2d(x + 1, y + 1, resolution + 1);
+            mesh.indices[base_index + 5] = index_2d(x + 1, y, resolution + 1);
         }
     }
 
