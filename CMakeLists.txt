@@ -12,15 +12,19 @@ set(TITAN_SOURCES "")
 add_subdirectory("src")
 add_subdirectory("external")
 
+
 add_executable(${PROJECT_NAME} ${TITAN_SOURCES})
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "gcc")
     target_compile_options(${PROJECT_NAME} PUBLIC 
-        "-std=c++2a" "-Wall" "-Werror" "-Wno-unused-declarations" "-Wno-unused-variable" "-Wno-unused-function"
+        "-std=c++2a" "-Wall" "-Werror" "-Wno-unused-declarations" "-Wno-unused-variable" "-Wno-unused-function -ffast-math"
     )
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(${PROJECT_NAME} PUBLIC 
-        "/std:c++20 /W0"
+        "/std:c++20 /W0 /fp:fast /O2"
+    )
+    target_link_options(${PROJECT_NAME} PUBLIC
+        "/PROFILE"
     )
 endif()
 

@@ -64,7 +64,7 @@ void Application::run() {
     info.height_scale = 25.0f;
     info.resolution = 10 * grid_size;
     info.noise_seed = std::random_device()();
-    info.noise_size = 2048;
+    info.noise_size = 4096;
     
     using namespace std::chrono;
 

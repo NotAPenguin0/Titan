@@ -26,7 +26,8 @@ vec2 const& PerlinNoise::gradient_grid::at(size_t x, size_t y) const {
 }
 
 static float perlin_lerp(float a0, float a1, float x) {
-    float w = 6 * std::pow(x, 5) - 15 * std::pow(x, 4) + 10 * std::pow(x, 3);
+//    float w = 6 * std::pow(x, 5) - 15 * std::pow(x, 4) + 10 * std::pow(x, 3); ==>  SLOW, line below is 10 times faster
+    float w = x * x * x * (x * (x * 6 - 15) + 10);
     return lerp(a0, a1, w);
 }
 
@@ -36,7 +37,7 @@ static float dot_grid_gradient(int ix, int iy, float x, float y, PerlinNoise::gr
     float dx = x - (float)ix;
     float dy = y - (float)iy;
 
-    vec2 const& gradient = gradients.at(ix, iy);
+    vec2 const gradient = gradients.at(ix, iy);
     return (dx * gradient.x + dy * gradient.y);
 }
 
@@ -49,11 +50,11 @@ std::vector<unsigned char> PerlinNoise::get_buffer(size_t w, size_t h, size_t oc
 }
 
 void PerlinNoise::get_buffer(unsigned char* buffer, size_t w, size_t h, size_t octaves) {
-    static float perlin_2d_min = -std::sqrt(0.5f);
-    static float perlin_2d_max = std::sqrt(0.5f);
+    static const float perlin_2d_min = -std::sqrt(0.5f);
+    static const float perlin_2d_max = std::sqrt(0.5f);
     
     float amplitude = 1.0f;
-    float persistence = 0.5f;
+    float const persistence = 0.5f;
 
     for (size_t octave = 0; octave < octaves; ++octave) {
         regenerate_gradients(std::pow(2, octave));
