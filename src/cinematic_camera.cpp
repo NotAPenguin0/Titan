@@ -21,12 +21,16 @@ void update_cinematic_camera(FollowCamera& camera, float delta_time) {
     camera.position = camera.target + camera.distance_to_target;
 }
 
-glm::mat4 get_view_matrix(OrbitCamera& camera, glm::vec3 world_up) {
+static glm::vec3 get_up_vector(glm::vec3 position, glm::vec3 target, glm::vec3 world_up) {
     // calculate up vector for camera
-    glm::vec3 direction = glm::normalize(camera.position - camera.target);
+    glm::vec3 direction = glm::normalize(position - target);
     glm::vec3 cam_right = glm::normalize(glm::cross(world_up, direction));
-    glm::vec3 cam_up = glm::normalize(glm::cross(direction, cam_right));
+    return glm::normalize(glm::cross(direction, cam_right));
+}
 
+glm::mat4 get_view_matrix(OrbitCamera& camera, glm::vec3 world_up) {
+    glm::vec3 cam_up = get_up_vector(camera.position, camera.target, world_up);
+    
     // create view matrix
     return glm::lookAt(camera.position, camera.target, cam_up);
 }
@@ -34,13 +38,17 @@ glm::mat4 get_view_matrix(OrbitCamera& camera, glm::vec3 world_up) {
 glm::mat4 get_view_matrix(FollowCamera& camera, glm::vec3 world_up) {
     // Identical to OrbitCamera
 
-    // calculate up vector for camera
-    glm::vec3 direction = glm::normalize(camera.position - camera.target);
-    glm::vec3 cam_right = glm::normalize(glm::cross(world_up, direction));
-    glm::vec3 cam_up = glm::normalize(glm::cross(direction, cam_right));
+    glm::vec3 cam_up = get_up_vector(camera.position, camera.target, world_up);
 
     // create view matrix
     return glm::lookAt(camera.position, camera.target, cam_up);
+}
+
+glm::mat4 get_view_matrix(StationaryCamera& camera, glm::vec3 world_up) {
+    glm::vec3 position = camera.target + camera.distance_to_target;
+    glm::vec3 cam_up = get_up_vector(position, camera.target, world_up);
+
+    return glm::lookAt(position, camera.target, cam_up);
 }
 
 }

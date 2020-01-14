@@ -56,14 +56,15 @@ void Application::run() {
 
     // Create terrain
 
-    float const grid_size = 5.0f;
+    float const grid_size = 25.0f;
 
     titan::HeightmapTerrainInfo info;
     info.width = grid_size;
     info.length = grid_size;
-    info.height_scale = 5.0f;
+    info.height_scale = 25.0f;
     info.resolution = 10 * grid_size;
     info.noise_seed = std::random_device()();
+    info.noise_size = 2048;
     
     using namespace std::chrono;
 
@@ -99,31 +100,29 @@ void Application::run() {
     glEnableVertexAttribArray(0);
     glVertexAttribFormat(0, 2, GL_FLOAT, GL_FALSE, 0);
     glVertexAttribBinding(0, 0);
-    glBindVertexBuffer(0, vbo, 0, 7 * sizeof(float));
+    glBindVertexBuffer(0, vbo, 0, terrain.mesh.vertex_size * sizeof(float));
 
     // TexCoords
     glEnableVertexAttribArray(1);
     glVertexAttribFormat(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float));
     glVertexAttribBinding(1, 1);
-    glBindVertexBuffer(1, vbo, 0, 7 * sizeof(float));
+    glBindVertexBuffer(1, vbo, 0, terrain.mesh.vertex_size * sizeof(float));
 
     // Normals
     glEnableVertexAttribArray(2);
     glVertexAttribFormat(2, 3, GL_FLOAT, GL_FALSE, 4 * sizeof(float));
     glVertexAttribBinding(2, 2);
-    glBindVertexBuffer(2, vbo, 0, 7 * sizeof(float));
+    glBindVertexBuffer(2, vbo, 0, terrain.mesh.vertex_size * sizeof(float));
 
     // Index buffer
     glVertexArrayElementBuffer(vao, ebo);
 
     // Create camera
 
-    auto camera = titan::create_cinematic_camera<titan::OrbitCamera>(glm::vec3(grid_size / 2, 0, grid_size / 2));
+    auto camera = titan::create_cinematic_camera<titan::OrbitCamera>(glm::vec3(grid_size / 2.0f, 0, grid_size / 2.0f));
 
-    float camera_height = 3;
-
-    camera.rotation_speed = 0.3f;
-    camera.distance_to_target = glm::vec3(grid_size + 5, camera_height, grid_size + 5);
+    camera.distance_to_target = glm::vec3(grid_size / 2.0f + 25, 10.0F, grid_size / 2.0f + 25);
+    camera.rotation_speed = 0.1f;
 
     float cam_climb_speed = 0.0f;
 
@@ -134,9 +133,6 @@ void Application::run() {
 
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        camera_height += cam_climb_speed * delta_time();
-        camera.distance_to_target.y = camera_height;
 
         titan::update_cinematic_camera(camera, delta_time());
 
@@ -151,6 +147,8 @@ void Application::run() {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, noise_tex);
         glUniform1i(3, 0);
+
+        glUniform1f(4, terrain.height_scale);
 
         glDrawElements(GL_TRIANGLES, terrain.mesh.indices.size(), GL_UNSIGNED_INT, nullptr);
 
