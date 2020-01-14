@@ -15,7 +15,8 @@ struct HeightmapTerrain {
     // Misc  info
 
     float width;
-    float height;
+    float length;
+    float height_scale;
 
     size_t heightmap_width;
     size_t heightmap_height;
@@ -26,8 +27,10 @@ struct HeightmapTerrainInfo {
 
     // The width of the terrain mesh, in worldspace coordinates
     float width;
-    // The height of the terrain mesh, in worldspace coordinates
-    float height;
+    // The length of the terrain mesh, in worldspace coordinates
+    float length;
+    // The maximum height of the terrain mesh, in worldspace coordinates
+    float height_scale;
     // The amount of vertices in each row/column.
     size_t resolution;
     // Controls how texture coordinates are calculated

@@ -22,6 +22,9 @@ The GridMesh is indexed since otherwise we have a lot of duplicate vertices
 struct GridMesh {
     std::vector<float> vertices;
     std::vector<unsigned int> indices;
+
+    // The amount of elements in a single vertex
+    size_t vertex_size;
 };
 
 /**

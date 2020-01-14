@@ -24,6 +24,8 @@ GridMesh create_grid_mesh(float const width, float const height, size_t const re
     mesh.vertices = std::vector<float>(vertex_count * vertex_size, 0);
     mesh.indices.resize(resolution * resolution * vertices_per_quad);
 
+    mesh.vertex_size = vertex_size;
+
     // Fill vertex buffer
     for (size_t y = 0; y < resolution + 1; ++y) {
         for (size_t x = 0; x < resolution + 1; ++x) {

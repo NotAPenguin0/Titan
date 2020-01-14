@@ -20,16 +20,16 @@ static void calculate_normals(HeightmapTerrain& terrain) {
     // Loop over each face
     auto const& indices = terrain.mesh.indices;
     auto& vertices = terrain.mesh.vertices;
-    for (size_t face = 0; face < indices.size() / 3; ++face) {
-        size_t const face_index = 3 * face;
-        size_t const v1_index = 7 * indices[face_index];
-        size_t const v2_index = 7 * indices[face_index + 1];
-        size_t const v3_index = 7 * indices[face_index + 2];
+    size_t const vertex_size = terrain.mesh.vertex_size;
+    for (size_t face = 0; face < indices.size(); face += 3) {
+        size_t const v1_index = vertex_size * indices[face];
+        size_t const v2_index = vertex_size * indices[face + 1];
+        size_t const v3_index = vertex_size * indices[face + 2];
 
         // Texcoords are at position 2 and 3 of a vertex
-        float const v1_height = 5 * sample_height(terrain, vertices[v1_index + 2], vertices[v1_index + 3]);
-        float const v2_height = 5 * sample_height(terrain, vertices[v2_index + 2], vertices[v2_index + 3]);
-        float const v3_height = 5 * sample_height(terrain, vertices[v3_index + 2], vertices[v3_index + 3]);
+        float const v1_height = terrain.height_scale * sample_height(terrain, vertices[v1_index + 2], vertices[v1_index + 3]);
+        float const v2_height = terrain.height_scale * sample_height(terrain, vertices[v2_index + 2], vertices[v2_index + 3]);
+        float const v3_height = terrain.height_scale * sample_height(terrain, vertices[v3_index + 2], vertices[v3_index + 3]);
 
         vec3 normal = calculate_normal(
             vec3{vertices[v1_index], v1_height, vertices[v1_index + 1]},
@@ -37,15 +37,23 @@ static void calculate_normals(HeightmapTerrain& terrain) {
             vec3{vertices[v3_index], v3_height, vertices[v3_index + 1]}
         );
 
-        vertices[v1_index + 4] += normal.x;
-        vertices[v2_index + 5] += normal.y;
-        vertices[v2_index + 6] += normal.z;
+        // Add calculated normals to vertex data
+
+        auto add_normal = [&vertices, &normal](size_t const index) {
+            vertices[index + 4] += normal.x;
+            vertices[index + 5] += normal.y;
+            vertices[index + 6] += normal.z;
+        };
+        
+        add_normal(v1_index);
+        add_normal(v2_index);
+        add_normal(v3_index);
     }
 
     // Normalize all normals
-    // TODO: remove hardcoded 7
-    for (size_t vertex = 0; vertex < vertices.size() / 7; ++vertex) {
-        size_t const base_index = 7 * vertex + 4;
+    for (size_t vertex = 0; vertex < vertices.size(); vertex += vertex_size) {
+        // Normal data starts at position 4
+        size_t const base_index = vertex + 4;
         vec3 normalized = normalize(
             vec3{vertices[base_index], vertices[base_index + 1], vertices[base_index + 2]}
         );
@@ -59,12 +67,13 @@ HeightmapTerrain create_heightmap_terrain(HeightmapTerrainInfo const& info) {
     HeightmapTerrain terrain;
 
     terrain.width = info.width;
-    terrain.height = info.height;
+    terrain.length = info.length;
+    terrain.height_scale = info.height_scale;
     terrain.heightmap_width = info.noise_size;
     terrain.heightmap_height = info.noise_size;
 
     // Generate mesh
-    terrain.mesh = create_grid_mesh(info.width, info.height, info.resolution, info.texture_mode);
+    terrain.mesh = create_grid_mesh(info.width, info.length, info.resolution, info.texture_mode);
     // Create noise buffer
     PerlinNoise noise(info.noise_seed);
     terrain.height_map = noise.get_buffer(info.noise_size, info.noise_size, info.noise_layers);

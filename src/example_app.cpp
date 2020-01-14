@@ -60,7 +60,8 @@ void Application::run() {
 
     titan::HeightmapTerrainInfo info;
     info.width = grid_size;
-    info.height = grid_size;
+    info.length = grid_size;
+    info.height_scale = 5.0f;
     info.resolution = 10 * grid_size;
     info.noise_seed = std::random_device()();
     
