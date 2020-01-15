@@ -18,6 +18,10 @@ namespace titan::math {
         }
     };
 
+    inline float dot(vec2 const v1, vec2 const v2) {
+        return v1.x * v2.x + v1.y * v2.y;
+    }
+
     struct vec3 {
         float x = 0, y = 0, z = 0;
 
