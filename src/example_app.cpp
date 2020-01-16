@@ -1,16 +1,16 @@
 #include "example_app.hpp"
 
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <stdexcept>
-#include <random>
-#include <iostream>
 #include <chrono>
+#include <iostream>
+#include <random>
+#include <stdexcept>
 
-#include "renderer/util.hpp"
 #include "cinematic_camera.hpp"
+#include "renderer/util.hpp"
 
 #include "generators/heightmap_terrain.hpp"
 
@@ -43,8 +43,8 @@ void Application::run() {
 
     // Load shaders
     unsigned int shader = titan::renderer::load_shader(
-                "data/shaders/grid.vert", 
-                "data/shaders/basic.frag");
+        "data/shaders/grid.vert",
+        "data/shaders/basic.frag");
 
     // Create transformation matrices
 
@@ -63,15 +63,17 @@ void Application::run() {
     info.length = grid_size;
     info.height_scale = 25.0f;
     info.resolution = 10 * grid_size;
-    info.noise_seed = std::random_device()();
+    // info.noise_seed = std::random_device()();
+    info.noise_seed = 1645;
     info.noise_size = 4096;
-    
+    info.noise_layers = 8;
+
     using namespace std::chrono;
 
     milliseconds start_time = duration_cast<milliseconds>(high_resolution_clock::now().time_since_epoch());
 
     titan::HeightmapTerrain terrain = titan::create_heightmap_terrain(info);
-    
+
     std::chrono::milliseconds end_time = duration_cast<milliseconds>(high_resolution_clock::now().time_since_epoch());
 
     std::cout << "Generated terrain in " << (end_time - start_time).count() << " ms" << std::endl;
@@ -79,7 +81,7 @@ void Application::run() {
     unsigned int noise_tex = titan::renderer::texture_from_buffer(terrain.height_map.data(), info.noise_size, info.noise_size);
 
     unsigned int vao;
-    unsigned int vbo; 
+    unsigned int vbo;
     unsigned int ebo;
 
     glGenVertexArrays(1, &vao);
@@ -87,12 +89,12 @@ void Application::run() {
     glGenBuffers(1, &ebo);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, terrain.mesh.vertices.size() * sizeof(float), 
-                terrain.mesh.vertices.data(), GL_STATIC_DRAW);
-    
+    glBufferData(GL_ARRAY_BUFFER, terrain.mesh.vertices.size() * sizeof(float),
+                 terrain.mesh.vertices.data(), GL_STATIC_DRAW);
+
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, terrain.mesh.indices.size() * sizeof(unsigned int), 
-                terrain.mesh.indices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, terrain.mesh.indices.size() * sizeof(unsigned int),
+                 terrain.mesh.indices.data(), GL_STATIC_DRAW);
 
     glBindVertexArray(vao);
 
@@ -119,18 +121,19 @@ void Application::run() {
 
     // Create camera
 
-    auto camera = titan::create_cinematic_camera<titan::OrbitCamera>(glm::vec3(grid_size / 2.0f, 0, grid_size / 2.0f));
+    auto camera = titan::create_cinematic_camera<titan::OrbitCamera>(glm::vec3(grid_size / 2.0f, -grid_size / 3.0f, grid_size / 2.0f));
 
     camera.distance_to_target = glm::vec3(grid_size / 2.0f + 25, 10.0F, grid_size / 2.0f + 25);
     camera.rotation_speed = 0.1f;
 
     float cam_climb_speed = 0.0f;
 
-    while(!glfwWindowShouldClose(win)) {
+    while (!glfwWindowShouldClose(win)) {
         float frame_time = glfwGetTime();
         d_time = frame_time - last_frame_time;
         last_frame_time = frame_time;
-
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
