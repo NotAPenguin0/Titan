@@ -2,6 +2,8 @@
 
 #include <cmath>
 
+#include <stdexcept>
+
 namespace titan {
 
     using namespace math;
@@ -13,7 +15,7 @@ namespace titan {
         size.y = h;
         gradients.resize(w * h);
         for (int i = 0; i < w * h; ++i) {
-            gradients[i] = normalize(vec2::random(engine));
+            gradients[i] = random_unit_vec2(engine);
         }
     }
 
@@ -27,29 +29,56 @@ namespace titan {
 
     PerlinNoise::PerlinNoise(size_t seed) : seed(seed), random_engine(seed) {}
 
-    std::vector<unsigned char> PerlinNoise::get_buffer(size_t w, size_t h, size_t octaves) {
-        std::vector<unsigned char> buffer(w * h, 0);
-        get_buffer(buffer.data(), w, h, octaves);
+    std::vector<unsigned char> PerlinNoise::get_buffer(size_t size, size_t octaves) {
+        std::vector<unsigned char> buffer(size * size, 0);
+        get_buffer(buffer.data(), size, octaves);
         return buffer;
     }
 
-    static PerlinNoise::gradient_grid generate_gradients(size_t const size, std::mt19937& random_engine) {
-        return PerlinNoise::gradient_grid(size, size, random_engine);
+    using u8 = unsigned char;
+    using i32 = int;
+    using u32 = unsigned int;
+    using i64 = long long;
+    using u64 = unsigned long long;
+    using f32 = float;
+
+    struct Gradient_Grid {
+        vec2 gradients[24];
+        u8 gradients_size;
+        u8 perm_table[128];
+        u8 perm_table_size;
+
+        vec2 at(u64 const x, u64 const y) const {
+            u8 const index = (y % perm_table_size + x) % perm_table_size;
+            return gradients[perm_table[index] % gradients_size];
+        }
+    };
+
+    static Gradient_Grid create_gradient_grid(u64 const size, std::mt19937& random_engine) {
+        Gradient_Grid grid;
+        grid.gradients_size = 24;
+        grid.perm_table_size = 128;
+
+        for (int i = 0; i < grid.gradients_size; ++i) {
+            grid.gradients[i] = random_unit_vec2(random_engine);
+        }
+
+        std::uniform_int_distribution<u32> d(0, 255);
+        for (int i = 0; i < grid.perm_table_size; ++i) {
+            grid.perm_table[i] = d(random_engine);
+        }
+
+        return grid;
     }
 
-    static float perlin_noise(float const x, float const y, PerlinNoise::gradient_grid const& gradients) {
-        int const x0 = (int)x;
-        int const x1 = x0 + 1;
-        int const y0 = (int)y;
-        int const y1 = y0 + 1;
+    static void destroy_gradient_grid(Gradient_Grid grid) {}
+
+    static float perlin_noise(float const x, float const y, vec2 const g00, vec2 const g10, vec2 const g01, vec2 const g11) {
+        i64 const x0 = (i64)x;
+        i64 const y0 = (i64)y;
 
         float const x_fractional = x - x0;
         float const y_fractional = y - y0;
-
-        vec2 const g00 = gradients.at(x0, y0);
-        vec2 const g10 = gradients.at(x0, y0);
-        vec2 const g01 = gradients.at(x0, y1);
-        vec2 const g11 = gradients.at(x1, y1);
 
         float const fac00 = dot(g00, {x_fractional, y_fractional});
         float const fac10 = dot(g10, {x_fractional - 1.0f, y_fractional});
@@ -61,38 +90,67 @@ namespace titan {
 
         float const lerped_x0 = lerp(fac00, fac10, x_lerp_factor);
         float const lerped_x1 = lerp(fac01, fac11, x_lerp_factor);
-        float noise = lerp(lerped_x0, lerped_x1, y_lerp_factor);
-        return 1.4142135f * noise;
+        return 1.4142135f * lerp(lerped_x0, lerped_x1, y_lerp_factor);
     }
 
-    void PerlinNoise::get_buffer(unsigned char* buffer, size_t w, size_t h, size_t octaves) {
-        float amplitude = 1.0f;
-        float const persistence = 0.5f;
+    // size is a power of 2.
+    static void generate_noise(unsigned char* const buffer, u32 const size, u32 const octaves, std::mt19937& random_engine) {
+        f32 amplitude = 1.0f;
+        f32 const persistence = 0.5f;
+        f32 const size_f32 = size;
+        u64 const size_4aligned = size & (~0x3);
+        Gradient_Grid const grid = create_gradient_grid(1 << (octaves - 1), random_engine);
 
-        for (size_t octave = 0; octave < octaves; ++octave) {
-            regenerate_gradients(1 << octave);
-            PerlinNoise::gradient_grid const gradients_loop = generate_gradients(1 << octave, random_engine);
+        for (u32 octave = 0; octave < octaves; ++octave) {
             amplitude *= persistence;
-            for (size_t y = 0; y < h; ++y) {
-                float const y_coord = (float)y / h * scale;
-                for (size_t x = 0; x < w; x += 4) {
-                    float const val0 = amplitude * (0.5f + 0.5f * perlin_noise((float)x / w * scale, y_coord, gradients_loop));
-                    float const val1 = amplitude * (0.5f + 0.5f * perlin_noise((float)(x + 1) / w * scale, y_coord, gradients_loop));
-                    float const val2 = amplitude * (0.5f + 0.5f * perlin_noise((float)(x + 2) / w * scale, y_coord, gradients_loop));
-                    float const val3 = amplitude * (0.5f + 0.5f * perlin_noise((float)(x + 3) / w * scale, y_coord, gradients_loop));
-                    buffer[y * w + x] += val0 * 255.0f;
-                    buffer[y * w + x + 1] += val1 * 255.0f;
-                    buffer[y * w + x + 2] += val2 * 255.0f;
-                    buffer[y * w + x + 3] += val3 * 255.0f;
+            u64 const noise_scale = 1 << octave;
+            f32 const noise_scale_f32 = noise_scale;
+            f32 const increment = 1.0f / size_f32 * noise_scale_f32;
+            u64 const resample_period = size / noise_scale;
+            if (resample_period >= 4) {
+                for (u64 y = 0; y < size; ++y) {
+                    f32 const y_coord = (f32)y / size_f32 * noise_scale_f32;
+                    u64 const sample_offset_y = y_coord;
+                    for (u64 x = 0, sample_offset_x = 0; sample_offset_x < noise_scale; ++sample_offset_x) {
+                        vec2 const g00 = grid.at(sample_offset_x, sample_offset_y);
+                        vec2 const g10 = grid.at(sample_offset_x + 1, sample_offset_y);
+                        vec2 const g01 = grid.at(sample_offset_x, sample_offset_y + 1);
+                        vec2 const g11 = grid.at(sample_offset_x + 1, sample_offset_y + 1);
+                        for (u64 i = 0; i < resample_period; i += 4, x += 4) {
+                            f32 const x_coord = (f32)x / size_f32 * noise_scale_f32;
+                            f32 const val0 = perlin_noise(x_coord, y_coord, g00, g10, g01, g11);
+                            f32 const val1 = perlin_noise(x_coord + 1 * increment, y_coord, g00, g10, g01, g11);
+                            f32 const val2 = perlin_noise(x_coord + 2 * increment, y_coord, g00, g10, g01, g11);
+                            f32 const val3 = perlin_noise(x_coord + 3 * increment, y_coord, g00, g10, g01, g11);
+                            buffer[y * size + x] += 255.0f * amplitude * (0.5f + 0.5f * val0);
+                            buffer[y * size + x + 1] += 255.0f * amplitude * (0.5f + 0.5f * val1);
+                            buffer[y * size + x + 2] += 255.0f * amplitude * (0.5f + 0.5f * val2);
+                            buffer[y * size + x + 3] += 255.0f * amplitude * (0.5f + 0.5f * val3);
+                        }
+                    }
                 }
-
-                size_t const w4 = w / 4;
-                for (size_t x = w4 * 4; x < w; ++x) {
-                    float const val = amplitude * (0.5f + 0.5f * perlin_noise((float)x / w * scale, y_coord, gradients_loop));
-                    buffer[y * w + x] += val * 255.0f;
+            } else {
+                for (u64 y = 0; y < size; ++y) {
+                    f32 const y_coord = (f32)y / size_f32 * noise_scale_f32;
+                    u64 const sample_offset_y = y_coord;
+                    for (u64 x = 0; x < size; ++x) {
+                        f32 const x_coord = (f32)x / size_f32 * noise_scale_f32;
+                        u64 const sample_offset_x = x_coord;
+                        vec2 const g00 = grid.at(sample_offset_x, sample_offset_y);
+                        vec2 const g10 = grid.at(sample_offset_x + 1, sample_offset_y);
+                        vec2 const g01 = grid.at(sample_offset_x, sample_offset_y + 1);
+                        vec2 const g11 = grid.at(sample_offset_x + 1, sample_offset_y + 1);
+                        f32 const val = perlin_noise(x_coord, y_coord, g00, g10, g01, g11);
+                        buffer[y * size + x] += 255.0f * amplitude * (0.5f + 0.5f * val);
+                    }
                 }
             }
         }
+        destroy_gradient_grid(grid);
+    }
+
+    void PerlinNoise::get_buffer(unsigned char* buffer, size_t size, size_t octaves) {
+        generate_noise(buffer, size, octaves, random_engine);
     }
 
     static float perlin_lerp(float a0, float a1, float x) {

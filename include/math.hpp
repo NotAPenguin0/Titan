@@ -8,18 +8,27 @@ namespace titan::math {
 
     struct vec2 {
         float x = 0, y = 0;
-
-        template <typename RandEngine>
-        static vec2 random(RandEngine& engine) {
-            float angle = ::titan::math::random(0, 2 * pi, engine);
-            float x = std::cos(angle);
-            float y = std::sin(angle);
-            return {x, y};
-        }
     };
+
+    template <typename RandEngine>
+    static vec2 random_unit_vec2(RandEngine& engine) {
+        float angle = ::titan::math::random(0, 2 * pi, engine);
+        float x = std::cos(angle);
+        float y = std::sin(angle);
+        return {x, y};
+    }
 
     inline float dot(vec2 const v1, vec2 const v2) {
         return v1.x * v2.x + v1.y * v2.y;
+    }
+
+    inline float magnitude(vec2 const& v) {
+        return std::sqrt(v.x * v.x + v.y * v.y);
+    }
+
+    inline vec2 normalize(vec2 const& v) {
+        float mag = magnitude(v);
+        return {v.x / mag, v.y / mag};
     }
 
     struct vec3 {
@@ -30,12 +39,21 @@ namespace titan::math {
         }
     };
 
-    float magnitude(vec2 const& v);
-    float magnitude(vec3 const& v);
-    vec2 normalize(vec2 const& v);
-    vec3 normalize(vec3 const& v);
+    inline float magnitude(vec3 const& v) {
+        return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+    }
 
-    vec3 cross(vec3 const& a, vec3 const& b);
+    inline vec3 normalize(vec3 const& v) {
+        float mag = magnitude(v);
+        return {v.x / mag, v.y / mag, v.z / mag};
+    }
+
+    inline vec3 cross(vec3 const& a, vec3 const& b) {
+        return vec3{
+            a.y * b.z - a.z * b.y,
+            a.z * b.x - a.x * b.z,
+            a.x * b.y - a.y * b.x};
+    }
 
     template <typename RandEngine>
     float random(float min, float max, RandEngine& engine) {
