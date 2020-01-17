@@ -25,6 +25,7 @@ struct GridMesh {
 
     // The amount of elements in a single vertex
     size_t vertex_size;
+    size_t resolution;
 };
 
 /**

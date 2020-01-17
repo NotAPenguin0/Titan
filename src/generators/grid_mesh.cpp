@@ -9,6 +9,8 @@ using namespace math;
 GridMesh create_grid_mesh(float const width, float const height, size_t const resolution, TextureMode tex_mode) {
     GridMesh mesh;
 
+    mesh.resolution = resolution;
+
     // Calculate cell size
     float const cell_w = width / resolution;
     float const cell_h = height / resolution;

@@ -9,7 +9,8 @@
 namespace titan {
 
 struct HeightmapTerrain {
-    GridMesh mesh;
+    // Meshes go from high LOD to low LOD
+    std::vector<GridMesh> meshes;
     std::vector<unsigned char> height_map;
 
     // Misc  info
@@ -20,6 +21,7 @@ struct HeightmapTerrain {
 
     size_t heightmap_width;
     size_t heightmap_height;
+
 };
 
 struct HeightmapTerrainInfo {
@@ -31,8 +33,8 @@ struct HeightmapTerrainInfo {
     float length;
     // The maximum height of the terrain mesh, in worldspace coordinates
     float height_scale;
-    // The amount of vertices in each row/column.
-    size_t resolution;
+    // The amount of vertices in each row/column for the highest LOD mesh
+    size_t max_lod;
     // Controls how texture coordinates are calculated
     TextureMode texture_mode = TextureMode::Stretch;
 

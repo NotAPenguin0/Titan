@@ -99,11 +99,11 @@ void Application::run() {
     info.width = grid_size;
     info.length = grid_size;
     info.height_scale = 25.0f;
-    info.resolution = 50 * grid_size;
+    info.max_lod = 100 * grid_size;
     info.noise_seed = std::random_device()();
-    info.noise_size = 2048;
+    info.noise_size = 4096;
     info.noise_layers = 3;
-    info.noise_persistence = 0.2f;
+    info.noise_persistence = 0.4f;
 
     using namespace std::chrono;
 
@@ -113,6 +113,9 @@ void Application::run() {
 
     std::chrono::milliseconds end_time = duration_cast<milliseconds>(high_resolution_clock::now().time_since_epoch());
     std::cout << "Generated terrain in " << (end_time - start_time).count() << " ms" << std::endl;
+
+    std::cout << "Max LOD: " << info.max_lod << std::endl;
+    std::cout << "Total LOD count: " << terrain.meshes.size() << std::endl;
 
     unsigned int noise_tex = titan::renderer::texture_from_buffer(terrain.height_map.data(), info.noise_size, info.noise_size);
 
@@ -124,13 +127,15 @@ void Application::run() {
     glGenBuffers(1, &vbo);
     glGenBuffers(1, &ebo);
 
+    auto const& mesh = terrain.meshes[2];
+
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, terrain.mesh.vertices.size() * sizeof(float),
-                 terrain.mesh.vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(float),
+                 mesh.vertices.data(), GL_STATIC_DRAW);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, terrain.mesh.indices.size() * sizeof(unsigned int),
-                 terrain.mesh.indices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int),
+                 mesh.indices.data(), GL_STATIC_DRAW);
 
     glBindVertexArray(vao);
 
@@ -138,19 +143,19 @@ void Application::run() {
     glEnableVertexAttribArray(0);
     glVertexAttribFormat(0, 2, GL_FLOAT, GL_FALSE, 0);
     glVertexAttribBinding(0, 0);
-    glBindVertexBuffer(0, vbo, 0, terrain.mesh.vertex_size * sizeof(float));
+    glBindVertexBuffer(0, vbo, 0, mesh.vertex_size * sizeof(float));
 
     // TexCoords
     glEnableVertexAttribArray(1);
     glVertexAttribFormat(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float));
     glVertexAttribBinding(1, 1);
-    glBindVertexBuffer(1, vbo, 0, terrain.mesh.vertex_size * sizeof(float));
+    glBindVertexBuffer(1, vbo, 0, mesh.vertex_size * sizeof(float));
 
     // Normals
     glEnableVertexAttribArray(2);
     glVertexAttribFormat(2, 3, GL_FLOAT, GL_FALSE, 4 * sizeof(float));
     glVertexAttribBinding(2, 2);
-    glBindVertexBuffer(2, vbo, 0, terrain.mesh.vertex_size * sizeof(float));
+    glBindVertexBuffer(2, vbo, 0, mesh.vertex_size * sizeof(float));
 
     // Index buffer
     glVertexArrayElementBuffer(vao, ebo);
@@ -205,7 +210,7 @@ void Application::run() {
 
         glUniform1f(4, terrain.height_scale);
 
-        glDrawElements(GL_TRIANGLES, terrain.mesh.indices.size(), GL_UNSIGNED_INT, nullptr);
+        glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, nullptr);
 
         glfwPollEvents();
         glfwSwapBuffers(win);
