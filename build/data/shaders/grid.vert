@@ -13,9 +13,10 @@ layout(location = 4) uniform float height_scale;
 out vec2 TexCoords;
 out vec3 Normal;
 
+
 void main() {   
     Normal = iNormal;
     TexCoords = iTexCoords;
-    float height = 1 - texture(height_map, TexCoords).x;
+    float height = texture(height_map, TexCoords).x;
     gl_Position = projection * view * model * vec4(iPos.xy, height * height_scale, 1.0);
 }

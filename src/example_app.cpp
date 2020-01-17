@@ -11,6 +11,8 @@
 
 #include "cinematic_camera.hpp"
 #include "renderer/util.hpp"
+#include "input.hpp"
+#include "camera.hpp"
 
 #include "generators/heightmap_terrain.hpp"
 
@@ -41,10 +43,45 @@ Application::~Application() {
 void Application::run() {
     titan::renderer::set_wireframe(false);
 
+    Input::initialize(win);
+    InputEventManager::init(win);
+
+    AxisManager::add_axis("Horizontal");
+    AxisManager::add_axis("Vertical");
+
+    AxisMapping pos_hor_mapping;
+    pos_hor_mapping.key = Key::D;
+    pos_hor_mapping.name = "Horizontal";
+    
+    AxisMapping neg_hor_mapping;
+    neg_hor_mapping.key = Key::A;
+    neg_hor_mapping.name = "Horizontal";
+    neg_hor_mapping.sensitivity = -1;
+
+    AxisMapping pos_ver_mapping;
+    pos_ver_mapping.key = Key::W;
+    pos_ver_mapping.name = "Vertical";
+
+    AxisMapping neg_ver_mapping;
+    neg_ver_mapping.key = Key::S;
+    neg_ver_mapping.name = "Vertical";
+    neg_ver_mapping.sensitivity = -1;
+
+    AxisManager::add_axis_mapping(pos_hor_mapping);
+    AxisManager::add_axis_mapping(neg_hor_mapping);
+    AxisManager::add_axis_mapping(pos_ver_mapping);
+    AxisManager::add_axis_mapping(neg_ver_mapping);
+
+    Input::set_mouse_capture(true);
+
     // Load shaders
     unsigned int shader = titan::renderer::load_shader(
         "data/shaders/grid.vert",
         "data/shaders/basic.frag");
+
+    unsigned int grass = titan::renderer::load_texture("data/textures/grass.png");
+    unsigned int moss = titan::renderer::load_texture("data/textures/moss.png");
+    unsigned int stone = titan::renderer::load_texture("data/textures/stone.png");
 
     // Create transformation matrices
 
@@ -62,11 +99,11 @@ void Application::run() {
     info.width = grid_size;
     info.length = grid_size;
     info.height_scale = 25.0f;
-    info.resolution = 10 * grid_size;
-    // info.noise_seed = std::random_device()();
-    info.noise_seed = 1645;
-    info.noise_size = 4096;
-    info.noise_layers = 8;
+    info.resolution = 50 * grid_size;
+    info.noise_seed = std::random_device()();
+    info.noise_size = 2048;
+    info.noise_layers = 3;
+    info.noise_persistence = 0.2f;
 
     using namespace std::chrono;
 
@@ -75,7 +112,6 @@ void Application::run() {
     titan::HeightmapTerrain terrain = titan::create_heightmap_terrain(info);
 
     std::chrono::milliseconds end_time = duration_cast<milliseconds>(high_resolution_clock::now().time_since_epoch());
-
     std::cout << "Generated terrain in " << (end_time - start_time).count() << " ms" << std::endl;
 
     unsigned int noise_tex = titan::renderer::texture_from_buffer(terrain.height_map.data(), info.noise_size, info.noise_size);
@@ -121,25 +157,30 @@ void Application::run() {
 
     // Create camera
 
-    auto camera = titan::create_cinematic_camera<titan::OrbitCamera>(glm::vec3(grid_size / 2.0f, -grid_size / 3.0f, grid_size / 2.0f));
+    titan::Camera camera(glm::vec3(0, 2, 0));
+    camera.mouse_sensitivity = 0.02f;
+    camera.move_speed = 0.001f;
 
-    camera.distance_to_target = glm::vec3(grid_size / 2.0f + 25, 10.0F, grid_size / 2.0f + 25);
-    camera.rotation_speed = 0.1f;
-
-    float cam_climb_speed = 0.0f;
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
 
     while (!glfwWindowShouldClose(win)) {
         float frame_time = glfwGetTime();
         d_time = frame_time - last_frame_time;
         last_frame_time = frame_time;
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_CULL_FACE);
+
+        InputEventManager::process_events(frame_time);
+
+        if (RawInput::get_key(Key::Escape).down) {
+            glfwSetWindowShouldClose(win, true);
+        }
+
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        titan::update_cinematic_camera(camera, delta_time());
+        camera.update(frame_time);
 
-        glm::mat4 view = titan::get_view_matrix(camera, glm::vec3(0, 1, 0));
+        glm::mat4 view = camera.get_view_matrix();
 
         glUseProgram(shader);
 
@@ -147,9 +188,20 @@ void Application::run() {
         glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(projection));
 
+        glUniform1f(5, grid_size);
+
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, noise_tex);
         glUniform1i(3, 0);
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, grass);
+
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, moss);
+
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, stone);
 
         glUniform1f(4, terrain.height_scale);
 

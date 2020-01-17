@@ -12,8 +12,8 @@ class PerlinNoise {
 public:
     PerlinNoise(size_t seed);
 
-    std::vector<unsigned char> get_buffer(size_t size, size_t octaves = 1);
-    void get_buffer(unsigned char* buffer, size_t size, size_t octaves = 1);
+    std::vector<unsigned char> get_buffer(size_t size, size_t octaves = 1, float persistence = 0.5f);
+    void get_buffer(unsigned char* buffer, size_t size, size_t octaves = 1, float persistence = 0.5f);
 
 private:
     size_t seed;

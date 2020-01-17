@@ -10,9 +10,9 @@ using namespace math;
 
 PerlinNoise::PerlinNoise(size_t seed) : seed(seed), random_engine(seed) {}
 
-std::vector<unsigned char> PerlinNoise::get_buffer(size_t size, size_t octaves) {
+std::vector<unsigned char> PerlinNoise::get_buffer(size_t size, size_t octaves, float persistence) {
     std::vector<unsigned char> buffer(size * size, 0);
-    get_buffer(buffer.data(), size, octaves);
+    get_buffer(buffer.data(), size, octaves, persistence);
     return buffer;
 }
 
@@ -75,9 +75,9 @@ static float perlin_noise(float const x, float const y, vec2 const g00, vec2 con
 }
 
 // size is a power of 2.
-static void generate_noise(unsigned char* const buffer, u32 const size, u32 const octaves, std::mt19937& random_engine) {
+static void generate_noise(unsigned char* const buffer, u32 const size, u32 const octaves, f32 const persistence,
+                           std::mt19937& random_engine) {
     f32 amplitude = 1.0f;
-    f32 const persistence = 0.5f;
     f32 const size_f32 = size;
     u64 const size_4aligned = size & (~0x3);
     GradientGrid const grid = create_gradient_grid(1 << (octaves - 1), random_engine);
@@ -130,8 +130,8 @@ static void generate_noise(unsigned char* const buffer, u32 const size, u32 cons
     destroy_gradient_grid(grid);
 }
 
-void PerlinNoise::get_buffer(unsigned char* buffer, size_t size, size_t octaves) {
-    generate_noise(buffer, size, octaves, random_engine);
+void PerlinNoise::get_buffer(unsigned char* buffer, size_t size, size_t octaves, float persistence) {
+    generate_noise(buffer, size, octaves, persistence, random_engine);
 }
 
 

@@ -40,6 +40,7 @@ struct HeightmapTerrainInfo {
     size_t noise_seed;
     size_t noise_size = 256;
     size_t noise_layers = 8;
+    float noise_persistence = 0.5f;
 };
 
 HeightmapTerrain create_heightmap_terrain(HeightmapTerrainInfo const& info);

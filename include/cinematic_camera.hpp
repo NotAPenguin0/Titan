@@ -35,7 +35,6 @@ struct StationaryCamera {
     glm::vec3 distance_to_target = glm::vec3(0, 0, 0);
 };
 
-
 template<typename T>
 // T requires CinematicCamera
 T create_cinematic_camera(glm::vec3 target = glm::vec3(0, 0, 0)) {

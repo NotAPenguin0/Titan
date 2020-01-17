@@ -5,6 +5,8 @@ set(TITAN_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/cinematic_camera.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/example_app.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/math.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/input.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/camera.cpp"
 
     # Terrain renderer
     "${CMAKE_CURRENT_SOURCE_DIR}/renderer/util.cpp"
