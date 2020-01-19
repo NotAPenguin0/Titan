@@ -155,7 +155,9 @@ void Application::run() {
     size_t const lod = 0;
 
     for (size_t i = 0; i < chunk_count; ++i) {
-        fill_buffer(vbos[i], ebos[i], terrain.mesh.chunks[i], lod);
+        size_t l = lod;
+        if (i == 1) l += 0;
+        fill_buffer(vbos[i], ebos[i], terrain.mesh.chunks[i], l);
     }
 
    
@@ -253,8 +255,10 @@ void Application::run() {
         glUniform1f(4, terrain.height_scale);
 
         for (size_t i = 0; i < chunk_count; ++i) {
+            size_t l = lod;
+            if (i == 1) l += 0;
             auto const& chunk = terrain.mesh.chunks[i];
-            auto const& mesh = chunk.meshes[lod];
+            auto const& mesh = chunk.meshes[l];
             unsigned int vbo = vbos[i];
             unsigned int ebo = ebos[i];
             // Update buffers for VAO
