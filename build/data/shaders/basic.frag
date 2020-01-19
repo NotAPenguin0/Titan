@@ -10,6 +10,7 @@ layout(binding = 3) uniform sampler2D stone;
 layout(location = 5) uniform float terrain_scale;
 
 out vec4 FragColor;
+in float Height;
 
 void main() {   
     float slope = 1 - dot(vec3(0, 1, 0), Normal);
@@ -23,12 +24,12 @@ void main() {
     if (slope < 0.3) {
         color = grass_color;
     } else if (slope < 0.4) {
-        color = mix(moss_color, grass_color, (0.35 - slope) / 0.1);
+        color = mix(moss_color, grass_color, (0.4 - slope) / 0.1);
     } else if (slope < 0.7) {
-        color = mix(stone_color, moss_color, (0.7 - slope) / 0.4);
+        color = mix(stone_color, moss_color, (0.7 - slope) / 0.3);
     } else {
         color = stone_color;
     }
-    color = grass_color;
+
     FragColor = vec4(color, 1);
 }

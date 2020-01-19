@@ -4,6 +4,7 @@
 #include "math.hpp"
 
 #include <thread>
+#include <iostream>
 
 namespace titan {
 
@@ -14,8 +15,10 @@ static vec3 calculate_normal(vec3 const v1, vec3 const v2, vec3 const v3) {
 }
 
 static float sample_height(HeightmapTerrain const& terrain, float x, float y) {
+    x = std::min(1.0f, x);
+    y = std::min(1.0f, y);
     size_t const index = index_2d(x * (terrain.heightmap_width - 1), y * (terrain.heightmap_height - 1), terrain.heightmap_width);
-    return terrain.height_map[index] / 255.0f;
+    return terrain.height_map[index];
 }
 
 static void calculate_normals(HeightmapTerrain& terrain, GridMesh& mesh) {
@@ -63,12 +66,27 @@ static void calculate_normals(HeightmapTerrain& terrain, GridMesh& mesh) {
     }
 }
 
-static void generate_terrain_lod(HeightmapTerrain& terrain, HeightmapTerrainInfo const& info, 
-                                 size_t const lod_index, size_t const lod) {
+static void generate_chunk_lod(HeightmapTerrain& terrain, HeightmapTerrain::Chunk& chunk, HeightmapTerrainInfo const& info, 
+                               size_t const lod_index, size_t const lod) {
     
-    terrain.meshes[lod_index] = create_grid_mesh(info.width, info.length, lod, info.texture_mode);
-    calculate_normals(terrain, terrain.meshes[0]);
+    GridMeshOptions options;
+    options.tex_w = terrain.width;
+    options.tex_h = terrain.length;
+    options.xoffset = chunk.xoffset;
+    options.yoffset = chunk.yoffset;
+    chunk.meshes[lod_index] = create_grid_mesh(chunk.width, chunk.length, lod, options);
+    calculate_normals(terrain, chunk.meshes[lod_index]);
 }
+
+static void generate_lod(HeightmapTerrain& terrain, HeightmapTerrainInfo const& info, size_t const lod_index, size_t const lod) {
+    for (size_t x = 0; x < terrain.chunks_x; ++x) {
+        for (size_t y = 0; y < terrain.chunks_y; ++y) {
+            size_t const chunk_id = index_2d(x, y, terrain.chunks_x);
+            generate_chunk_lod(terrain, terrain.mesh.chunks[chunk_id], info, lod_index, lod);
+        }
+    }
+}
+
 
 HeightmapTerrain create_heightmap_terrain(HeightmapTerrainInfo const& info) {
     HeightmapTerrain terrain;
@@ -81,17 +99,56 @@ HeightmapTerrain create_heightmap_terrain(HeightmapTerrainInfo const& info) {
 
     // Create noise buffer
     PerlinNoise noise(info.noise_seed);
-    terrain.height_map = noise.get_buffer(info.noise_size, info.noise_layers);
+    terrain.height_map = noise.get_buffer_float(info.noise_size, info.noise_layers);
 
     size_t const lod_count = std::log2(info.max_lod);
-    terrain.meshes.resize(lod_count);
-    std::vector<std::thread> threads(lod_count);
-
     size_t resolution = info.max_lod;
 
-    for (size_t lod_idx = 0; lod_idx < lod_count; ++lod_idx) {
-        threads[lod_idx] = std::thread(generate_terrain_lod, std::ref(terrain), std::ref(info), lod_idx, resolution);
+    terrain.max_lod = lod_count;
 
+    // Calculate the amount of chunks in the terrain
+
+    constexpr float chunk_size = 8.0f;
+
+    size_t const chunks_x = info.width / chunk_size + 1;
+    size_t const chunks_y = info.length / chunk_size + 1;    
+
+    size_t const chunk_count = chunks_x * chunks_y;
+    terrain.mesh.chunks.resize(chunk_count);
+
+    // Write info to output data
+    terrain.chunks_x = chunks_x;
+    terrain.chunks_y = chunks_y;
+    terrain.chunk_size = chunk_size;
+
+    // Write basic chunk data
+    for (size_t x = 0; x < chunks_x; ++x) {
+        for (size_t y = 0; y < chunks_y; ++y) {
+            size_t const chunk_id = index_2d(x, y, chunks_x);
+            auto& chunk = terrain.mesh.chunks[chunk_id];
+            chunk.xoffset = x * terrain.chunk_size;
+            chunk.yoffset = y * terrain.chunk_size;
+            chunk.width = terrain.chunk_size;
+            chunk.length = terrain.chunk_size;
+
+            if (x == terrain.chunks_x - 1) {
+                chunk.width = std::fmod(terrain.width, terrain.chunk_size);
+            }
+            if (y == terrain.chunks_y - 1) {
+                chunk.length = std::fmod(terrain.length, terrain.chunk_size);
+            }
+
+            chunk.meshes.resize(terrain.max_lod);
+        }
+    }
+
+    std::vector<std::thread> threads(lod_count);
+
+    for (size_t lod_index = 0; lod_index < lod_count; ++lod_index) {
+        threads[lod_index] = std::thread(
+            generate_lod,
+            std::ref(terrain), std::ref(info), lod_index, resolution
+        );
         resolution /= 2;
     }
 

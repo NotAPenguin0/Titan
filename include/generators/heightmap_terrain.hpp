@@ -9,19 +9,40 @@
 namespace titan {
 
 struct HeightmapTerrain {
+    struct Chunk {
+        std::vector<GridMesh> meshes;
+
+        float width;
+        float length;
+
+        float xoffset;
+        float yoffset;
+    };
+
+    struct Mesh {
+        std::vector<Chunk> chunks;
+    };
+
+    // TODO: Use floating point buffer to store heightmap for higher precision
+
     // Meshes go from high LOD to low LOD
-    std::vector<GridMesh> meshes;
-    std::vector<unsigned char> height_map;
+    Mesh mesh;
+    std::vector<float> height_map;
 
     // Misc  info
+
+    size_t max_lod;
 
     float width;
     float length;
     float height_scale;
 
+    float chunk_size;
+    size_t chunks_x;
+    size_t chunks_y;
+
     size_t heightmap_width;
     size_t heightmap_height;
-
 };
 
 struct HeightmapTerrainInfo {

@@ -6,7 +6,7 @@ namespace titan {
 
 using namespace math;
 
-GridMesh create_grid_mesh(float const width, float const height, size_t const resolution, TextureMode tex_mode) {
+GridMesh create_grid_mesh(float const width, float const height, size_t const resolution, GridMeshOptions options) {
     GridMesh mesh;
 
     mesh.resolution = resolution;
@@ -33,13 +33,13 @@ GridMesh create_grid_mesh(float const width, float const height, size_t const re
         for (size_t x = 0; x < resolution + 1; ++x) {
             size_t const base_index = vertex_size * index_2d(x, y, resolution + 1);
             // Position
-            float const x_pos = x * cell_w;
-            float const y_pos = y * cell_h;
+            float const x_pos = options.xoffset + x * cell_w;
+            float const y_pos = options.yoffset + y * cell_h;
             mesh.vertices[base_index] = x_pos;
             mesh.vertices[base_index + 1] = y_pos;
             // TexCoords
-            mesh.vertices[base_index + 2] = x_pos / (tex_mode == TextureMode::Stretch ? width : 1);
-            mesh.vertices[base_index + 3] = y_pos / (tex_mode == TextureMode::Stretch ? height : 1);
+            mesh.vertices[base_index + 2] = x_pos / options.tex_w;
+            mesh.vertices[base_index + 3] = y_pos / options.tex_h;
         }
     }
 

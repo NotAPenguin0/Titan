@@ -40,6 +40,30 @@ Application::~Application() {
     glfwTerminate();
 }
 
+/*
+static void update_lod(titan::HeightmapTerrain& terrain, size_t new_lod, unsigned int vbo, unsigned int ebo) {
+    auto& mesh = terrain.meshes[new_lod];
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(float),
+                 mesh.vertices.data(), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int),
+                 mesh.indices.data(), GL_STATIC_DRAW);
+}
+*/
+
+void fill_buffer(unsigned int vbo, unsigned int ebo, titan::HeightmapTerrain::Chunk& chunk, size_t lod) {
+    auto& mesh = chunk.meshes[lod];
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(float),
+                 mesh.vertices.data(), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int),
+                 mesh.indices.data(), GL_STATIC_DRAW);
+}
+
 void Application::run() {
     titan::renderer::set_wireframe(false);
 
@@ -99,11 +123,11 @@ void Application::run() {
     info.width = grid_size;
     info.length = grid_size;
     info.height_scale = 25.0f;
-    info.max_lod = 100 * grid_size;
+    info.max_lod = 300;
     info.noise_seed = std::random_device()();
     info.noise_size = 4096;
-    info.noise_layers = 3;
-    info.noise_persistence = 0.4f;
+    info.noise_layers = 4;
+    info.noise_persistence = 0.5f;
 
     using namespace std::chrono;
 
@@ -115,50 +139,43 @@ void Application::run() {
     std::cout << "Generated terrain in " << (end_time - start_time).count() << " ms" << std::endl;
 
     std::cout << "Max LOD: " << info.max_lod << std::endl;
-    std::cout << "Total LOD count: " << terrain.meshes.size() << std::endl;
+    std::cout << "Total LOD count: " << terrain.max_lod << std::endl;
 
     unsigned int noise_tex = titan::renderer::texture_from_buffer(terrain.height_map.data(), info.noise_size, info.noise_size);
 
     unsigned int vao;
-    unsigned int vbo;
-    unsigned int ebo;
+    size_t const chunk_count = terrain.chunks_x * terrain.chunks_y;
+    std::vector<unsigned int> vbos(chunk_count);
+    std::vector<unsigned int> ebos(chunk_count);
 
     glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    glGenBuffers(1, &ebo);
+    glGenBuffers(chunk_count, vbos.data());
+    glGenBuffers(chunk_count, ebos.data());
 
-    auto const& mesh = terrain.meshes[2];
+    size_t const lod = 0;
 
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(float),
-                 mesh.vertices.data(), GL_STATIC_DRAW);
+    for (size_t i = 0; i < chunk_count; ++i) {
+        fill_buffer(vbos[i], ebos[i], terrain.mesh.chunks[i], lod);
+    }
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int),
-                 mesh.indices.data(), GL_STATIC_DRAW);
-
+   
     glBindVertexArray(vao);
 
     // Positions
     glEnableVertexAttribArray(0);
     glVertexAttribFormat(0, 2, GL_FLOAT, GL_FALSE, 0);
     glVertexAttribBinding(0, 0);
-    glBindVertexBuffer(0, vbo, 0, mesh.vertex_size * sizeof(float));
 
     // TexCoords
     glEnableVertexAttribArray(1);
     glVertexAttribFormat(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float));
     glVertexAttribBinding(1, 1);
-    glBindVertexBuffer(1, vbo, 0, mesh.vertex_size * sizeof(float));
 
     // Normals
     glEnableVertexAttribArray(2);
     glVertexAttribFormat(2, 3, GL_FLOAT, GL_FALSE, 4 * sizeof(float));
     glVertexAttribBinding(2, 2);
-    glBindVertexBuffer(2, vbo, 0, mesh.vertex_size * sizeof(float));
 
-    // Index buffer
-    glVertexArrayElementBuffer(vao, ebo);
 
     // Create camera
 
@@ -169,6 +186,31 @@ void Application::run() {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
+    // Increasing LOD means going to a lower index
+/*
+    ActionBinding increase_lod;
+    increase_lod.key = Key::Up;
+    increase_lod.when = KeyAction::Press;
+    increase_lod.callback = [&terrain, &cur_lod, &vbo, &ebo] () {
+        if (cur_lod == 0) { return; }
+        --cur_lod;
+        update_lod(terrain, cur_lod, vbo, ebo);
+    };
+
+    // Decreasing LOD means going to a higher index
+
+    ActionBinding decrease_lod;
+    decrease_lod.key = Key::Down;
+    decrease_lod.when = KeyAction::Press;
+    decrease_lod.callback = [&terrain, &cur_lod, &vbo, &ebo] () {
+        if (cur_lod == terrain.meshes.size() - 1) { return; }
+        ++cur_lod;
+        update_lod(terrain, cur_lod, vbo, ebo);
+    };
+
+    ActionBindingManager::add_action(increase_lod);
+    ActionBindingManager::add_action(decrease_lod);
+*/
     while (!glfwWindowShouldClose(win)) {
         float frame_time = glfwGetTime();
         d_time = frame_time - last_frame_time;
@@ -210,7 +252,20 @@ void Application::run() {
 
         glUniform1f(4, terrain.height_scale);
 
-        glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, nullptr);
+        for (size_t i = 0; i < chunk_count; ++i) {
+            auto const& chunk = terrain.mesh.chunks[i];
+            auto const& mesh = chunk.meshes[lod];
+            unsigned int vbo = vbos[i];
+            unsigned int ebo = ebos[i];
+            // Update buffers for VAO
+            glBindVertexBuffer(0, vbo, 0, mesh.vertex_size * sizeof(float));
+            glBindVertexBuffer(1, vbo, 0, mesh.vertex_size * sizeof(float));
+            glBindVertexBuffer(2, vbo, 0, mesh.vertex_size * sizeof(float));
+            glVertexArrayElementBuffer(vao, ebo);
+            size_t const index_size = mesh.indices.size();
+
+            glDrawElements(GL_TRIANGLES, index_size, GL_UNSIGNED_INT, nullptr);
+        }
 
         glfwPollEvents();
         glfwSwapBuffers(win);

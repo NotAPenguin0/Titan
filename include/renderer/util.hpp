@@ -12,6 +12,7 @@ unsigned int load_shader(const char* vtx_path, const char* frag_path, const char
 unsigned int load_texture(const char* path);
 
 unsigned int texture_from_buffer(unsigned char* buf, size_t w, size_t h);
+unsigned int texture_from_buffer(float* buf, size_t w, size_t h);
 
 }
 

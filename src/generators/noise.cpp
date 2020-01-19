@@ -16,6 +16,12 @@ std::vector<unsigned char> PerlinNoise::get_buffer(size_t size, size_t octaves, 
     return buffer;
 }
 
+std::vector<float> PerlinNoise::get_buffer_float(size_t size, size_t octaves, float persistence) {
+    std::vector<float> buffer(size * size, 0);
+    get_buffer(buffer.data(), size, octaves, persistence);
+    return buffer;
+}
+
 using u8 = unsigned char;
 using i32 = int;
 using u32 = unsigned int;
@@ -130,7 +136,67 @@ static void generate_noise(unsigned char* const buffer, u32 const size, u32 cons
     destroy_gradient_grid(grid);
 }
 
+// Same function but for float buffer
+static void generate_noise(float* buffer, u32 const size, u32 const octaves, f32 const persistence,
+                           std::mt19937& random_engine) {
+    f32 amplitude = 1.0f;
+    f32 const size_f32 = size;
+    u64 const size_4aligned = size & (~0x3);
+    GradientGrid const grid = create_gradient_grid(1 << (octaves - 1), random_engine);
+
+    for (u32 octave = 0; octave < octaves; ++octave) {
+        amplitude *= persistence;
+        u64 const noise_scale = 1 << octave;
+        f32 const noise_scale_f32 = noise_scale;
+        f32 const increment = 1.0f / size_f32 * noise_scale_f32;
+        u64 const resample_period = size / noise_scale;
+        if (resample_period >= 4) {
+            for (u64 y = 0; y < size; ++y) {
+                f32 const y_coord = (f32)y / size_f32 * noise_scale_f32;
+                u64 const sample_offset_y = y_coord;
+                for (u64 x = 0, sample_offset_x = 0; sample_offset_x < noise_scale; ++sample_offset_x) {
+                    vec2 const g00 = grid.at(sample_offset_x, sample_offset_y);
+                    vec2 const g10 = grid.at(sample_offset_x + 1, sample_offset_y);
+                    vec2 const g01 = grid.at(sample_offset_x, sample_offset_y + 1);
+                    vec2 const g11 = grid.at(sample_offset_x + 1, sample_offset_y + 1);
+                    for (u64 i = 0; i < resample_period; i += 4, x += 4) {
+                        f32 const x_coord = (f32)x / size_f32 * noise_scale_f32;
+                        f32 const val0 = perlin_noise(x_coord, y_coord, g00, g10, g01, g11);
+                        f32 const val1 = perlin_noise(x_coord + 1 * increment, y_coord, g00, g10, g01, g11);
+                        f32 const val2 = perlin_noise(x_coord + 2 * increment, y_coord, g00, g10, g01, g11);
+                        f32 const val3 = perlin_noise(x_coord + 3 * increment, y_coord, g00, g10, g01, g11);
+                        buffer[y * size + x] += amplitude * (0.5f + 0.5f * val0);
+                        buffer[y * size + x + 1] += amplitude * (0.5f + 0.5f * val1);
+                        buffer[y * size + x + 2] += amplitude * (0.5f + 0.5f * val2);
+                        buffer[y * size + x + 3] += amplitude * (0.5f + 0.5f * val3);
+                    }
+                }
+            }
+        } else {
+            for (u64 y = 0; y < size; ++y) {
+                f32 const y_coord = (f32)y / size_f32 * noise_scale_f32;
+                u64 const sample_offset_y = y_coord;
+                for (u64 x = 0; x < size; ++x) {
+                    f32 const x_coord = (f32)x / size_f32 * noise_scale_f32;
+                    u64 const sample_offset_x = x_coord;
+                    vec2 const g00 = grid.at(sample_offset_x, sample_offset_y);
+                    vec2 const g10 = grid.at(sample_offset_x + 1, sample_offset_y);
+                    vec2 const g01 = grid.at(sample_offset_x, sample_offset_y + 1);
+                    vec2 const g11 = grid.at(sample_offset_x + 1, sample_offset_y + 1);
+                    f32 const val = perlin_noise(x_coord, y_coord, g00, g10, g01, g11);
+                    buffer[y * size + x] += amplitude * (0.5f + 0.5f * val);
+                }
+            }
+        }
+    }
+    destroy_gradient_grid(grid);
+}
+
 void PerlinNoise::get_buffer(unsigned char* buffer, size_t size, size_t octaves, float persistence) {
+    generate_noise(buffer, size, octaves, persistence, random_engine);
+}
+
+void PerlinNoise::get_buffer(float* buffer, size_t size, size_t octaves, float persistence) {
     generate_noise(buffer, size, octaves, persistence, random_engine);
 }
 

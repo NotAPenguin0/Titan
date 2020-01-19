@@ -28,6 +28,14 @@ struct GridMesh {
     size_t resolution;
 };
 
+struct GridMeshOptions {
+    float xoffset = 0;
+    float yoffset = 0;
+
+    float tex_w;
+    float tex_h;
+};
+
 /**
  * @param width: The width of the mesh in worldspace units
  * @param height: The height of the mesh in worldspace units
@@ -35,7 +43,7 @@ struct GridMesh {
  * @param tex_mode: Whether to strech the texture so it spans the entire grid or to repeat it every worldspace unit. Default value is Stretch
  * @return The generated mesh
  */
-GridMesh create_grid_mesh(float width, float height, size_t resolution, TextureMode tex_mode = TextureMode::Stretch);
+GridMesh create_grid_mesh(float width, float height, size_t resolution, GridMeshOptions options);
 
 
 }
