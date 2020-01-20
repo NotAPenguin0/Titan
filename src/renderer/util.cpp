@@ -97,7 +97,7 @@ unsigned int load_texture(const char* path) {
     return texture;
 }
 
-unsigned int texture_from_buffer(unsigned char* buf, size_t w, size_t h) {
+unsigned int texture_from_buffer(unsigned char const* buf, size_t w, size_t h) {
     unsigned int tex;
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
@@ -111,7 +111,7 @@ unsigned int texture_from_buffer(unsigned char* buf, size_t w, size_t h) {
     return tex;
 }
 
-unsigned int texture_from_buffer(float* buf, size_t w, size_t h) {
+unsigned int texture_from_buffer(float const* buf, size_t w, size_t h) {
     unsigned int tex;
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);

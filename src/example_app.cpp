@@ -10,11 +10,47 @@
 #include <stdexcept>
 
 #include "cinematic_camera.hpp"
-#include "renderer/util.hpp"
 #include "input.hpp"
 #include "camera.hpp"
 
+#include "renderer/terrain_renderer.hpp"
+#include "renderer/util.hpp"
+
 #include "generators/heightmap_terrain.hpp"
+
+static void gl_error_callback([[maybe_unused]] GLenum source, 
+                       [[maybe_unused]] GLenum type, 
+                       [[maybe_unused]] GLuint id,
+                       [[maybe_unused]] GLenum severity,
+                       [[maybe_unused]] GLsizei length, 
+                       [[maybe_unused]] GLchar const* message,
+                       [[maybe_unused]] void const* user_data) {
+    
+    std::string err_type = "Unknown error";
+    if (type == GL_DEBUG_TYPE_ERROR) {
+        err_type = "Error";
+    } else if (type == GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR) {
+        err_type = "Deprecated behavior";
+    } else if (type == GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR) {
+        err_type = "Undefined behavior";
+    } else if (type == GL_DEBUG_TYPE_PORTABILITY) {
+        err_type = "Non portable functionality";
+    } else if (type == GL_DEBUG_TYPE_PERFORMANCE) {
+        err_type = "Performance issue";
+    } else if (type == GL_DEBUG_TYPE_MARKER) {
+        err_type = "Command stream annotation";
+    } else if (type == GL_DEBUG_TYPE_OTHER) {
+        err_type = "Other error";
+    }
+
+    std::string severity_string = "Unknown";
+    if (severity == GL_DEBUG_SEVERITY_NOTIFICATION) severity_string == "Info";
+    else if (severity == GL_DEBUG_SEVERITY_LOW) severity_string = "Warning";
+    else if (severity == GL_DEBUG_SEVERITY_MEDIUM) severity_string = "Error";
+    else if (severity == GL_DEBUG_SEVERITY_HIGH) severity_string = "Critical error";
+
+    std::cerr << "[OpenGL] " << severity_string << ": " << message << std::endl;
+}
 
 Application::Application(size_t const width, size_t const height) {
     if (!glfwInit()) {
@@ -33,6 +69,12 @@ Application::Application(size_t const width, size_t const height) {
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         throw std::runtime_error("Failed to load glad");
     }
+
+    glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    glDebugMessageCallback(gl_error_callback, nullptr);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
+    glDebugMessageControl(GL_DONT_CARE, GL_DEBUG_TYPE_PERFORMANCE, GL_DONT_CARE, 0, nullptr, GL_FALSE);
 }
 
 Application::~Application() {
@@ -53,18 +95,14 @@ static void update_lod(titan::HeightmapTerrain& terrain, size_t new_lod, unsigne
 }
 */
 
-void fill_buffer(unsigned int vbo, unsigned int ebo, titan::HeightmapTerrain::Chunk& chunk, size_t lod) {
-    auto& mesh = chunk.meshes[lod];
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, mesh.vertices.size() * sizeof(float),
-                 mesh.vertices.data(), GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.indices.size() * sizeof(unsigned int),
-                 mesh.indices.data(), GL_STATIC_DRAW);
-}
 
 void Application::run() {
+
+/////////
+// https://discordapp.com/channels/318590007881236480/318783155744145411/668564420435378177
+// Rodrigo being the true MPV explaining me how to use persistent maps
+////////
+
     titan::renderer::set_wireframe(false);
 
     Input::initialize(win);
@@ -141,49 +179,20 @@ void Application::run() {
     std::cout << "Max LOD: " << info.max_lod << std::endl;
     std::cout << "Total LOD count: " << terrain.max_lod << std::endl;
 
-    unsigned int noise_tex = titan::renderer::texture_from_buffer(terrain.height_map.data(), info.noise_size, info.noise_size);
-
-    unsigned int vao;
-    size_t const chunk_count = terrain.chunks_x * terrain.chunks_y;
-    std::vector<unsigned int> vbos(chunk_count);
-    std::vector<unsigned int> ebos(chunk_count);
-
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(chunk_count, vbos.data());
-    glGenBuffers(chunk_count, ebos.data());
-
     size_t const lod = 0;
 
-    for (size_t i = 0; i < chunk_count; ++i) {
-        size_t l = lod;
-        if (i == 1) l += 0;
-        fill_buffer(vbos[i], ebos[i], terrain.mesh.chunks[i], l);
-    }
+    start_time = duration_cast<milliseconds>(high_resolution_clock::now().time_since_epoch());
 
-   
-    glBindVertexArray(vao);
+    titan::renderer::TerrainRenderInfo render_info = titan::renderer::make_terrain_render_info(terrain);
 
-    // Positions
-    glEnableVertexAttribArray(0);
-    glVertexAttribFormat(0, 2, GL_FLOAT, GL_FALSE, 0);
-    glVertexAttribBinding(0, 0);
-
-    // TexCoords
-    glEnableVertexAttribArray(1);
-    glVertexAttribFormat(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float));
-    glVertexAttribBinding(1, 1);
-
-    // Normals
-    glEnableVertexAttribArray(2);
-    glVertexAttribFormat(2, 3, GL_FLOAT, GL_FALSE, 4 * sizeof(float));
-    glVertexAttribBinding(2, 2);
-
+    end_time = duration_cast<milliseconds>(high_resolution_clock::now().time_since_epoch());
+    std::cout << "Data upload finished  in " << (end_time - start_time).count() << " ms" << std::endl;
 
     // Create camera
 
     titan::Camera camera(glm::vec3(0, 2, 0));
-    camera.mouse_sensitivity = 0.02f;
-    camera.move_speed = 0.001f;
+    camera.mouse_sensitivity = 5.0f;
+    camera.move_speed = 5.0f;
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -227,7 +236,7 @@ void Application::run() {
         glClearColor(0, 0, 0, 1);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        camera.update(frame_time);
+        camera.update(d_time);
 
         glm::mat4 view = camera.get_view_matrix();
 
@@ -239,10 +248,6 @@ void Application::run() {
 
         glUniform1f(5, grid_size);
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, noise_tex);
-        glUniform1i(3, 0);
-
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, grass);
 
@@ -250,26 +255,14 @@ void Application::run() {
         glBindTexture(GL_TEXTURE_2D, moss);
 
         glActiveTexture(GL_TEXTURE3);
+
         glBindTexture(GL_TEXTURE_2D, stone);
 
         glUniform1f(4, terrain.height_scale);
 
-        for (size_t i = 0; i < chunk_count; ++i) {
-            size_t l = lod;
-            if (i == 1) l += 0;
-            auto const& chunk = terrain.mesh.chunks[i];
-            auto const& mesh = chunk.meshes[l];
-            unsigned int vbo = vbos[i];
-            unsigned int ebo = ebos[i];
-            // Update buffers for VAO
-            glBindVertexBuffer(0, vbo, 0, mesh.vertex_size * sizeof(float));
-            glBindVertexBuffer(1, vbo, 0, mesh.vertex_size * sizeof(float));
-            glBindVertexBuffer(2, vbo, 0, mesh.vertex_size * sizeof(float));
-            glVertexArrayElementBuffer(vao, ebo);
-            size_t const index_size = mesh.indices.size();
-
-            glDrawElements(GL_TRIANGLES, index_size, GL_UNSIGNED_INT, nullptr);
-        }
+        std::cout << "Awaiting data upload ...\n" << std::flush;
+        titan::renderer::await_data_upload(render_info);
+        titan::renderer::render_terrain(render_info, 0);
 
         glfwPollEvents();
         glfwSwapBuffers(win);

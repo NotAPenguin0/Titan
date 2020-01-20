@@ -10,7 +10,8 @@ set(TITAN_SOURCES
 
     # Terrain renderer
     "${CMAKE_CURRENT_SOURCE_DIR}/renderer/util.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/renderer/chunk_renderer.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/renderer/terrain_renderer.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/renderer/swap_buffer.cpp"
 
     # Generators module
     "${CMAKE_CURRENT_SOURCE_DIR}/generators/grid_mesh.cpp"
