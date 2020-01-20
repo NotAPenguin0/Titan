@@ -180,10 +180,11 @@ void Application::run() {
     std::cout << "Total LOD count: " << terrain.max_lod << std::endl;
 
     size_t const lod = 0;
+    size_t cur_lod = terrain.max_lod / 2;
 
     start_time = duration_cast<milliseconds>(high_resolution_clock::now().time_since_epoch());
 
-    titan::renderer::TerrainRenderInfo render_info = titan::renderer::make_terrain_render_info(terrain);
+    titan::renderer::TerrainRenderInfo render_info = titan::renderer::make_terrain_render_info(terrain, terrain.max_lod / 2);
 
     end_time = duration_cast<milliseconds>(high_resolution_clock::now().time_since_epoch());
     std::cout << "Data upload finished  in " << (end_time - start_time).count() << " ms" << std::endl;
@@ -198,14 +199,14 @@ void Application::run() {
     glEnable(GL_CULL_FACE);
 
     // Increasing LOD means going to a lower index
-/*
+
     ActionBinding increase_lod;
     increase_lod.key = Key::Up;
     increase_lod.when = KeyAction::Press;
-    increase_lod.callback = [&terrain, &cur_lod, &vbo, &ebo] () {
+    increase_lod.callback = [&terrain, &cur_lod, &render_info] () {
         if (cur_lod == 0) { return; }
+        titan::renderer::previous_lod(render_info, terrain, 0);
         --cur_lod;
-        update_lod(terrain, cur_lod, vbo, ebo);
     };
 
     // Decreasing LOD means going to a higher index
@@ -213,15 +214,28 @@ void Application::run() {
     ActionBinding decrease_lod;
     decrease_lod.key = Key::Down;
     decrease_lod.when = KeyAction::Press;
-    decrease_lod.callback = [&terrain, &cur_lod, &vbo, &ebo] () {
-        if (cur_lod == terrain.meshes.size() - 1) { return; }
+    decrease_lod.callback = [&terrain, &cur_lod, &render_info] () {
+        if (cur_lod == terrain.max_lod - 1) { return; }
+        titan::renderer::next_lod(render_info, terrain, 0);
         ++cur_lod;
-        update_lod(terrain, cur_lod, vbo, ebo);
     };
 
     ActionBindingManager::add_action(increase_lod);
     ActionBindingManager::add_action(decrease_lod);
-*/
+
+    ActionBinding quit;
+    quit.key = Key::Escape;
+    quit.when = KeyAction::Press;
+    quit.callback = [this] () {
+        glfwSetWindowShouldClose(win, true);
+    };
+
+    ActionBindingManager::add_action(quit);
+
+    for (auto& chunk : render_info.chunks) {
+        titan::renderer::await_data_upload(chunk);
+    }
+
     while (!glfwWindowShouldClose(win)) {
         float frame_time = glfwGetTime();
         d_time = frame_time - last_frame_time;
@@ -260,7 +274,7 @@ void Application::run() {
 
         glUniform1f(4, terrain.height_scale);
 
-        titan::renderer::render_terrain(render_info, 0);
+        titan::renderer::render_terrain(render_info);
 
         glfwPollEvents();
         glfwSwapBuffers(win);

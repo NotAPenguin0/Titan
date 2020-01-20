@@ -66,9 +66,11 @@ void SwapBuffer::start_data_upload(void const* data, size_t len) {
 void SwapBuffer::wait_for_upload() {
     if (worker.joinable()) {
         worker.join();
+        glBindBuffer(target, handle);
+        glFlushMappedBufferRange(target, 0, cur_write_length);
+    } else { 
+        return; 
     }
-    glBindBuffer(target, handle);
-    glFlushMappedBufferRange(target, 0, cur_write_length);
 }
 
 void SwapBuffer::swap(SwapBuffer& rhs) {

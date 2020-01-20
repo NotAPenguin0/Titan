@@ -19,9 +19,12 @@ struct TerrainRenderInfo {
         SwapBuffer vbo;
         SwapBuffer ebo;
         size_t elements;
+
+        size_t lod;
     };
 
     struct ChunkRenderInfo {
+        // Previous LOD means higher detail, next LOD means lower detail
         LODBuffer current_lod;
         LODBuffer previous_lod;
         LODBuffer next_lod;  
@@ -36,10 +39,15 @@ struct TerrainRenderInfo {
     size_t vertex_size;
 };
 
-TerrainRenderInfo make_terrain_render_info(HeightmapTerrain const& terrain);
+TerrainRenderInfo make_terrain_render_info(HeightmapTerrain const& terrain, size_t const initial_lod);
+
+void previous_lod(TerrainRenderInfo& info, HeightmapTerrain const& terrain, size_t chunk_id);
+void next_lod(TerrainRenderInfo& info, HeightmapTerrain const& terrain, size_t chunk_id);
+
+void await_data_upload(TerrainRenderInfo::ChunkRenderInfo& chunk);
 
 // Before calling this, a shader must be bound
-void render_terrain(TerrainRenderInfo const& terrain, size_t const lod);
+void render_terrain(TerrainRenderInfo const& terrain);
     
 }
 
