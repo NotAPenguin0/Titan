@@ -29,11 +29,9 @@ void SwapBuffer::create(unsigned int buffer_target, size_t max_byte_size) {
     target = buffer_target;
     size = max_byte_size;
 
-    glGenBuffers(target, &handle);
+    glGenBuffers(1, &handle);
     // Set buffer size by uploading null as data
     constexpr GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT;
-    std::cout << "MBTS: " << max_byte_size << std::endl;
-    std::cout << "SZ: " << size << std::endl;
     glBindBuffer(target, handle);
     glBufferStorage(target, max_byte_size, nullptr, flags);
     // Grab data pointer to persistent buffer storage

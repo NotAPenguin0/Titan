@@ -260,8 +260,6 @@ void Application::run() {
 
         glUniform1f(4, terrain.height_scale);
 
-        std::cout << "Awaiting data upload ...\n" << std::flush;
-        titan::renderer::await_data_upload(render_info);
         titan::renderer::render_terrain(render_info, 0);
 
         glfwPollEvents();

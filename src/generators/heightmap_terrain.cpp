@@ -149,6 +149,7 @@ HeightmapTerrain create_heightmap_terrain(HeightmapTerrainInfo const& info) {
             generate_lod,
             std::ref(terrain), std::ref(info), lod_index, resolution
         );
+//        generate_lod(terrain, info, lod_index, resolution);
         resolution /= 2;
     }
 

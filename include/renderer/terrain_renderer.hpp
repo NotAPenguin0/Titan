@@ -14,15 +14,17 @@ struct TerrainRenderInfo {
     // We can use one single vao because the vertex format is consistent for each chunk
     unsigned int vao;
 
-    struct ChunkRenderInfo {
-        std::vector<unsigned int> vbos;
-        std::vector<unsigned int> ebos;
-        std::vector<size_t> element_count;
 
-        // Temporary
+    struct LODBuffer {
         SwapBuffer vbo;
         SwapBuffer ebo;
         size_t elements;
+    };
+
+    struct ChunkRenderInfo {
+        LODBuffer current_lod;
+        LODBuffer previous_lod;
+        LODBuffer next_lod;  
     };
 
     std::vector<ChunkRenderInfo> chunks;
@@ -35,9 +37,6 @@ struct TerrainRenderInfo {
 };
 
 TerrainRenderInfo make_terrain_render_info(HeightmapTerrain const& terrain);
-
-// Temporary for testing
-void await_data_upload(TerrainRenderInfo& terrain);
 
 // Before calling this, a shader must be bound
 void render_terrain(TerrainRenderInfo const& terrain, size_t const lod);
