@@ -98,7 +98,7 @@ void previous_lod(TerrainRenderInfo& info, HeightmapTerrain const& terrain, size
     auto& chunk = info.chunks[chunk_id];
 
     await_data_upload(chunk);
-    
+
     size_t const current_lod = chunk.current_lod.lod;
    
     // Previous LOD becomes current LOD
@@ -107,6 +107,8 @@ void previous_lod(TerrainRenderInfo& info, HeightmapTerrain const& terrain, size
     swap_buffers(chunk.previous_lod, chunk.next_lod);
     // The old next LOD is now unused, fill it with the new previous LOD
     size_t new_previous_lod = chunk.current_lod.lod - 1;
+    // Don't load LOD out of bounds
+    if (chunk.current_lod.lod == 0) { return; }
     queue_swap_buffer_fill(terrain, chunk.previous_lod, chunk_id, new_previous_lod);
 }
 
@@ -121,8 +123,11 @@ void next_lod(TerrainRenderInfo& info, HeightmapTerrain const& terrain, size_t c
     swap_buffers(chunk.next_lod, chunk.current_lod);
     // The old current LOD becomes the new previous LOD
     swap_buffers(chunk.next_lod, chunk.previous_lod);
+
     // The old previous LOD is now unused, fill it with the new next LOD
-    size_t new_next_lod = chunk.current_lod.lod + 1;
+    size_t const new_next_lod = chunk.current_lod.lod + 1;
+    // Don't load LOD out of bounds
+    if (chunk.current_lod.lod >= terrain.max_lod - 1) { return; }
     queue_swap_buffer_fill(terrain, chunk.next_lod, chunk_id, new_next_lod);
 }
 

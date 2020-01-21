@@ -204,7 +204,6 @@ void Application::run() {
     increase_lod.key = Key::Up;
     increase_lod.when = KeyAction::Press;
     increase_lod.callback = [&terrain, &cur_lod, &render_info] () {
-        std::cout << cur_lod << std::endl;
         if (cur_lod == 0) { return; }
         titan::renderer::previous_lod(render_info, terrain, 0);
         --cur_lod;
@@ -216,7 +215,6 @@ void Application::run() {
     decrease_lod.key = Key::Down;
     decrease_lod.when = KeyAction::Press;
     decrease_lod.callback = [&terrain, &cur_lod, &render_info] () {
-        std::cout << cur_lod << std::endl;
         if (cur_lod == terrain.max_lod - 1) { return; }
         titan::renderer::next_lod(render_info, terrain, 0);
         ++cur_lod;
