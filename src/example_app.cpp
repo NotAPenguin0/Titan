@@ -153,6 +153,8 @@ void Application::run() {
     model = glm::translate(model, glm::vec3(0, 0, 0));
     model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1, 0, 0));
 
+    glm::mat4 inv_model = glm::inverse(model);
+
     // Create terrain
 
     float const grid_size = 25.0f;
@@ -205,7 +207,7 @@ void Application::run() {
     increase_lod.when = KeyAction::Press;
     increase_lod.callback = [&terrain, &cur_lod, &render_info] () {
         if (cur_lod == 0) { return; }
-        titan::renderer::previous_lod(render_info, terrain, 0);
+        titan::renderer::higher_lod(render_info, terrain, 0);
         --cur_lod;
     };
 
@@ -216,7 +218,7 @@ void Application::run() {
     decrease_lod.when = KeyAction::Press;
     decrease_lod.callback = [&terrain, &cur_lod, &render_info] () {
         if (cur_lod == terrain.max_lod - 1) { return; }
-        titan::renderer::next_lod(render_info, terrain, 0);
+        titan::renderer::lower_lod(render_info, terrain, 0);
         ++cur_lod;
     };
 
@@ -233,7 +235,7 @@ void Application::run() {
     ActionBindingManager::add_action(quit);
 
     for (auto& chunk : render_info.chunks) {
-        titan::renderer::await_data_upload(chunk);
+        titan::renderer::await_all_data_upload(chunk);
     }
 
     while (!glfwWindowShouldClose(win)) {
@@ -251,6 +253,9 @@ void Application::run() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         camera.update(d_time);
+        glm::vec3 pos = camera.get_position();
+        
+        titan::renderer::update_lod_distance(render_info, terrain, model, glm::value_ptr(pos));
 
         glm::mat4 view = camera.get_view_matrix();
 

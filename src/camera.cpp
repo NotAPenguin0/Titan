@@ -19,6 +19,10 @@ glm::mat4 Camera::get_view_matrix() {
     return glm::lookAt(pos, pos + front, up);
 }
 
+glm::vec3 Camera::get_position() const {
+    return pos;
+}
+
 void Camera::do_freelook(float dt) {
     auto mouse = RawInput::get_mouse();
     

@@ -17,6 +17,8 @@ struct HeightmapTerrain {
 
         float xoffset;
         float yoffset;
+
+        float height_at_center;
     };
 
     struct Mesh {

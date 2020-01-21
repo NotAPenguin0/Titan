@@ -39,9 +39,9 @@ void SwapBuffer::create(unsigned int buffer_target, size_t max_byte_size) {
 }
 
 SwapBuffer::~SwapBuffer() {
-    glBindBuffer(target, handle);
-    glUnmapBuffer(target);
-    glDeleteBuffers(1, &handle);
+//    glBindBuffer(target, handle);
+//    glUnmapBuffer(target);
+//    glDeleteBuffers(1, &handle);
 }
 
 unsigned int SwapBuffer::get() const {

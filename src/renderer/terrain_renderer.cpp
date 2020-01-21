@@ -5,7 +5,10 @@
 
 // debug
 #include <iostream>
-#include <chrono>
+
+#include "math.hpp"
+// meh
+#include <glm/glm.hpp> 
 
 using namespace std::chrono;
 
@@ -68,16 +71,20 @@ TerrainRenderInfo make_terrain_render_info(HeightmapTerrain const& terrain, size
     size_t const lod_count = terrain.max_lod;
     info.chunks.resize(chunk_count);
     for (size_t i = 0; i < chunk_count; ++i) {
-        // TODO: Bounds checking for LOD
         auto& chunk = info.chunks[i];
+        auto const& chunk_data = terrain.mesh.chunks[i];
+        // Chunk center for distanced based LOD changing
+        chunk.center[0] = chunk_data.xoffset + chunk_data.width / 2.0f;
+        chunk.center[1] = chunk_data.yoffset + chunk_data.length / 2.0f;
+        chunk.center[2] = chunk_data.height_at_center;
         // Create swap buffers with highest LOD level, this is at index 0
-        make_swap_buffers_lod(terrain, chunk.previous_lod, i, 0);
+        make_swap_buffers_lod(terrain, chunk.higher_lod, i, 0);
         make_swap_buffers_lod(terrain, chunk.current_lod, i, 0);
-        make_swap_buffers_lod(terrain, chunk.next_lod, i, 0);
-
-        queue_swap_buffer_fill(terrain, chunk.previous_lod, i, initial_lod - 1);
+        make_swap_buffers_lod(terrain, chunk.lower_lod, i, 0);
+        // Queue filling the swap buffers for this chunk
+        queue_swap_buffer_fill(terrain, chunk.higher_lod, i, initial_lod - 1);
         queue_swap_buffer_fill(terrain, chunk.current_lod, i, initial_lod);
-        queue_swap_buffer_fill(terrain, chunk.next_lod, i, initial_lod + 1);
+        queue_swap_buffer_fill(terrain, chunk.lower_lod, i, initial_lod + 1);
     }
 
     // vertex layout stays constant, so we can pick any LOD on any chunk
@@ -93,53 +100,88 @@ void swap_buffers(TerrainRenderInfo::LODBuffer& lhs, TerrainRenderInfo::LODBuffe
     std::swap(lhs.lod, rhs.lod);
 }
 
-void previous_lod(TerrainRenderInfo& info, HeightmapTerrain const& terrain, size_t chunk_id) {
+void higher_lod(TerrainRenderInfo& info, HeightmapTerrain const& terrain, size_t chunk_id) {
     // Make sure all data was uploaded before starting to swap buffers
     auto& chunk = info.chunks[chunk_id];
-
-    await_data_upload(chunk);
+    await_all_data_upload(chunk);
 
     size_t const current_lod = chunk.current_lod.lod;
    
     // Previous LOD becomes current LOD
-    swap_buffers(chunk.previous_lod, chunk.current_lod);
+    swap_buffers(chunk.higher_lod, chunk.current_lod);
     // The old current LOD becomes the next LOD
-    swap_buffers(chunk.previous_lod, chunk.next_lod);
+    swap_buffers(chunk.higher_lod, chunk.lower_lod);
     // The old next LOD is now unused, fill it with the new previous LOD
     size_t new_previous_lod = chunk.current_lod.lod - 1;
     // Don't load LOD out of bounds
     if (chunk.current_lod.lod == 0) { return; }
-    queue_swap_buffer_fill(terrain, chunk.previous_lod, chunk_id, new_previous_lod);
+    queue_swap_buffer_fill(terrain, chunk.higher_lod, chunk_id, new_previous_lod);
 }
 
-void next_lod(TerrainRenderInfo& info, HeightmapTerrain const& terrain, size_t chunk_id) {
+void lower_lod(TerrainRenderInfo& info, HeightmapTerrain const& terrain, size_t chunk_id) {
     // Make sure all data was uploaded before starting to swap buffers
     auto& chunk = info.chunks[chunk_id];
-    await_data_upload(chunk);
+    await_all_data_upload(chunk);
 
     size_t const current_lod = chunk.current_lod.lod;
 
     // Next LOD becomes current LOD
-    swap_buffers(chunk.next_lod, chunk.current_lod);
+    swap_buffers(chunk.lower_lod, chunk.current_lod);
     // The old current LOD becomes the new previous LOD
-    swap_buffers(chunk.next_lod, chunk.previous_lod);
+    swap_buffers(chunk.lower_lod, chunk.higher_lod);
 
     // The old previous LOD is now unused, fill it with the new next LOD
     size_t const new_next_lod = chunk.current_lod.lod + 1;
     // Don't load LOD out of bounds
     if (chunk.current_lod.lod >= terrain.max_lod - 1) { return; }
-    queue_swap_buffer_fill(terrain, chunk.next_lod, chunk_id, new_next_lod);
+    queue_swap_buffer_fill(terrain, chunk.lower_lod, chunk_id, new_next_lod);
 }
 
-void await_data_upload(TerrainRenderInfo::ChunkRenderInfo& chunk) {
+void update_lod_distance(TerrainRenderInfo& info, HeightmapTerrain const& terrain, glm::mat4 terrain_transform, float const* cam_pos) {
+    for (size_t chunk_id = 0; chunk_id < info.chunks.size(); ++chunk_id) {
+        auto const& center_raw = info.chunks[chunk_id].center;
+        glm::vec4 center = glm::vec4(center_raw[0], center_raw[1], center_raw[2], 1);
+        // Transform center with model matrix
+        center = terrain_transform * center;
+        update_lod_distance(info, terrain, chunk_id, &center.x, cam_pos);
+    }
+}
+
+void update_lod_distance(TerrainRenderInfo& info, HeightmapTerrain const& terrain, 
+                         size_t chunk_id, float const* chunk_center, float const* cam_pos) {
+    auto const& chunk = info.chunks[chunk_id];
+    math::vec3 cam = {cam_pos[0], cam_pos[1], cam_pos[2]};
+    math::vec3 center = {chunk_center[0], chunk_center[1], chunk_center[2]};
+
+    float distance = math::magnitude(center - cam);  
+    // Very basic distance-based LOD
+    // Treshold for maximum LOD
+    constexpr float max_lod_distance = 5.0f;
+    // Treshold for minimum LOD
+    constexpr float min_lod_distance = 200.0f;
+    constexpr float distance_range = min_lod_distance - max_lod_distance;
+    distance -= max_lod_distance;
+    float distance_pct = distance / distance_range;
+    distance_pct = std::clamp(distance_pct, 0.0f, 1.0f);
+    distance_pct *= terrain.max_lod;
+    if ((size_t)distance_pct > (chunk.current_lod.lod)) {
+        if (chunk.current_lod.lod >= terrain.max_lod - 1) { return; }
+        lower_lod(info, terrain, chunk_id);
+    } else if ((size_t)distance_pct < (chunk.current_lod.lod)) {
+        if (chunk.current_lod.lod ==  0) { return; }
+        higher_lod(info, terrain, chunk_id);
+    }
+}
+
+void await_all_data_upload(TerrainRenderInfo::ChunkRenderInfo& chunk) {
     chunk.current_lod.vbo.wait_for_upload();
     chunk.current_lod.ebo.wait_for_upload();
 
-    chunk.previous_lod.vbo.wait_for_upload();
-    chunk.previous_lod.ebo.wait_for_upload();
+    chunk.higher_lod.vbo.wait_for_upload();
+    chunk.higher_lod.ebo.wait_for_upload();
     
-    chunk.next_lod.vbo.wait_for_upload();
-    chunk.next_lod.ebo.wait_for_upload();
+    chunk.lower_lod.vbo.wait_for_upload();
+    chunk.lower_lod.ebo.wait_for_upload();
 }
 
 void render_terrain(TerrainRenderInfo const& terrain) {

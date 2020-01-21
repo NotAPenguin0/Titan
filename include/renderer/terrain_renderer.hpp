@@ -26,8 +26,10 @@ struct TerrainRenderInfo {
     struct ChunkRenderInfo {
         // Previous LOD means higher detail, next LOD means lower detail
         LODBuffer current_lod;
-        LODBuffer previous_lod;
-        LODBuffer next_lod;  
+        LODBuffer higher_lod;
+        LODBuffer lower_lod;  
+
+        float center[3] = {0, 0, 0};
     };
 
     std::vector<ChunkRenderInfo> chunks;
@@ -41,10 +43,20 @@ struct TerrainRenderInfo {
 
 TerrainRenderInfo make_terrain_render_info(HeightmapTerrain const& terrain, size_t const initial_lod);
 
-void previous_lod(TerrainRenderInfo& info, HeightmapTerrain const& terrain, size_t chunk_id);
-void next_lod(TerrainRenderInfo& info, HeightmapTerrain const& terrain, size_t chunk_id);
+void higher_lod(TerrainRenderInfo& info, HeightmapTerrain const& terrain, size_t chunk_id);
+void lower_lod(TerrainRenderInfo& info, HeightmapTerrain const& terrain, size_t chunk_id);
 
-void await_data_upload(TerrainRenderInfo::ChunkRenderInfo& chunk);
+// TODO: I don't like having glm::mat4 here but okay
+void update_lod_distance(TerrainRenderInfo& info, HeightmapTerrain const& terrain, glm::mat4 terrain_transform, float const* cam_pos);
+
+/**
+ * @param chunk_center: Pointer to a float array with 3 values with the chunk's center
+ * @param cam_pos: Pointer to a float array with 3 values with the camera position 
+ */
+void update_lod_distance(TerrainRenderInfo& info, HeightmapTerrain const& terrain, 
+                         size_t chunk_id, float const* chunk_center, float const* cam_pos);
+
+void await_all_data_upload(TerrainRenderInfo::ChunkRenderInfo& chunk);
 
 // Before calling this, a shader must be bound
 void render_terrain(TerrainRenderInfo const& terrain);

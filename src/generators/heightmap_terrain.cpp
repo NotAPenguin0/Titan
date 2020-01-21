@@ -139,6 +139,9 @@ HeightmapTerrain create_heightmap_terrain(HeightmapTerrainInfo const& info) {
             }
 
             chunk.meshes.resize(terrain.max_lod);
+
+            chunk.height_at_center = terrain.height_scale * 
+                                     sample_height(terrain, chunk.xoffset + chunk.width / 2.0f, chunk.yoffset + chunk.length / 2.0f);
         }
     }
 
@@ -149,7 +152,6 @@ HeightmapTerrain create_heightmap_terrain(HeightmapTerrainInfo const& info) {
             generate_lod,
             std::ref(terrain), std::ref(info), lod_index, resolution
         );
-//        generate_lod(terrain, info, lod_index, resolution);
         resolution /= 2;
     }
 
