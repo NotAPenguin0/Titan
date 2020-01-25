@@ -14,7 +14,6 @@ struct TerrainRenderInfo {
     // We can use one single vao because the vertex format is consistent for each chunk
     unsigned int vao;
 
-
     struct LODBuffer {
         SwapBuffer vbo;
         SwapBuffer ebo;
@@ -36,6 +35,8 @@ struct TerrainRenderInfo {
 
     // Heightmap texture
     unsigned int height_map;
+    // Normal map texture
+    unsigned int normal_map;
 
     // Misc data
     size_t vertex_size;
@@ -46,7 +47,7 @@ TerrainRenderInfo make_terrain_render_info(HeightmapTerrain const& terrain, size
 void higher_lod(TerrainRenderInfo& info, HeightmapTerrain const& terrain, size_t chunk_id);
 void lower_lod(TerrainRenderInfo& info, HeightmapTerrain const& terrain, size_t chunk_id);
 
-// TODO: I don't like having glm::mat4 here but okay
+// TODO: I don't like having the glm::mat4 here but okay
 void update_lod_distance(TerrainRenderInfo& info, HeightmapTerrain const& terrain, glm::mat4 terrain_transform, float const* cam_pos);
 
 /**

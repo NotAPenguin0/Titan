@@ -267,14 +267,13 @@ void Application::run() {
 
         glUniform1f(5, grid_size);
 
-        glActiveTexture(GL_TEXTURE1);
+        glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, grass);
 
-        glActiveTexture(GL_TEXTURE2);
+        glActiveTexture(GL_TEXTURE3);
         glBindTexture(GL_TEXTURE_2D, moss);
 
-        glActiveTexture(GL_TEXTURE3);
-
+        glActiveTexture(GL_TEXTURE4);
         glBindTexture(GL_TEXTURE_2D, stone);
 
         glUniform1f(4, terrain.height_scale);

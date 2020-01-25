@@ -27,15 +27,14 @@ static void create_vao(TerrainRenderInfo& info, HeightmapTerrain const& terrain)
     glEnableVertexAttribArray(1);
     glVertexAttribFormat(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float));
     glVertexAttribBinding(1, 1);
-
-    // Normals
-    glEnableVertexAttribArray(2);
-    glVertexAttribFormat(2, 3, GL_FLOAT, GL_FALSE, 4 * sizeof(float));
-    glVertexAttribBinding(2, 2);
 }
 
 static void create_heightmap(TerrainRenderInfo& info, HeightmapTerrain const& terrain) {
     info.height_map = texture_from_buffer(terrain.height_map.data(), terrain.heightmap_width, terrain.heightmap_height);
+}
+
+static void create_normal_map(TerrainRenderInfo& info, HeightmapTerrain const& terrain) {
+    info.normal_map = texture_from_vec3_buffer(terrain.normal_map.data(), terrain.normalmap_width, terrain.normalmap_height);
 }
 
 // Create swap buffers for max LOD specified in lod parameter
@@ -65,6 +64,7 @@ TerrainRenderInfo make_terrain_render_info(HeightmapTerrain const& terrain, size
 
     create_vao(info, terrain);
     create_heightmap(info, terrain);
+    create_normal_map(info, terrain);
 
     // Fill chunk vbo's
     size_t const chunk_count = terrain.mesh.chunks.size();
@@ -158,7 +158,7 @@ void update_lod_distance(TerrainRenderInfo& info, HeightmapTerrain const& terrai
     // Treshold for maximum LOD
     constexpr float max_lod_distance = 5.0f;
     // Treshold for minimum LOD
-    constexpr float min_lod_distance = 200.0f;
+    constexpr float min_lod_distance = 50.0f;
     constexpr float distance_range = min_lod_distance - max_lod_distance;
     distance -= max_lod_distance;
     float distance_pct = distance / distance_range;
@@ -188,6 +188,9 @@ void render_terrain(TerrainRenderInfo const& terrain) {
     // Bind noisemap
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, terrain.height_map);
+    // Bind normal map
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, terrain.normal_map);
     // Render all chunks
     size_t const chunk_count = terrain.chunks.size();
     for (size_t i = 0; i < chunk_count; ++i) {

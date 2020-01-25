@@ -13,6 +13,7 @@ unsigned int load_texture(const char* path);
 
 unsigned int texture_from_buffer(unsigned char const* buf, size_t w, size_t h);
 unsigned int texture_from_buffer(float const* buf, size_t w, size_t h);
+unsigned int texture_from_vec3_buffer(float const* buf, size_t w, size_t h);
 
 }
 
