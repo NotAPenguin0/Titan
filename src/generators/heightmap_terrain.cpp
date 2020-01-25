@@ -21,7 +21,7 @@ static float sample_height(HeightmapTerrain const& terrain, float x, float y) {
     return terrain.height_map[index];
 }
 
-static void calculate_normals(HeightmapTerrain& terrain, GridMesh& mesh, size_t const offset) {
+static void calculate_normals(HeightmapTerrain& terrain, GridMesh& mesh) {
     // Loop over each face
     auto const& indices = mesh.indices;
     auto& vertices = mesh.vertices;
@@ -43,42 +43,26 @@ static void calculate_normals(HeightmapTerrain& terrain, GridMesh& mesh, size_t 
 
         // Add calculated normals to vertex data
 
-        auto add_normal = [&terrain, &vertices, &normal, offset, vertex_size](size_t const vertex_index) {
-            float x = vertices[vertex_index + 2];
-            float y = vertices[vertex_index + 3];
-            x = std::min(1.0f, x);
-            y = std::min(1.0f, y);
-            size_t index = 3 * index_2d(std::round(x * (terrain.normalmap_width - 1)), 
-                                        std::round(y * (terrain.normalmap_height - 1)), 
-                                        terrain.normalmap_width);
-            index = vertex_index / vertex_size * 3 + offset;
-            terrain.normal_map[index] += normal.x;
-            terrain.normal_map[index + 1] += normal.y;
-            terrain.normal_map[index + 2] += normal.z;
+        auto add_normal = [&vertices, &normal](size_t const index) {
+            vertices[index + 4] += normal.x;
+            vertices[index + 5] += normal.y;
+            vertices[index + 6] += normal.z;
         };
 
         add_normal(v1_index);
         add_normal(v2_index);
         add_normal(v3_index);
     }
-}
-
-static void calculate_normals(HeightmapTerrain& terrain, HeightmapTerrainInfo const& info, size_t const lod_index, size_t const lod) {
-    for (size_t y = 0; y < terrain.chunks_y; ++y) {
-        for (size_t x = 0; x < terrain.chunks_x; ++x) {
-            size_t const chunk_id = index_2d(x, y, terrain.chunks_x);
-            size_t const index_offset = 3 * chunk_id * (lod + 1) * (lod + 1);
-            calculate_normals(terrain, terrain.mesh.chunks[chunk_id].meshes[lod_index], index_offset);
-        }
-    }
 
     // Normalize all normals
-    for (size_t normal = 0; normal < terrain.normal_map.size(); normal += 3) {
+    for (size_t vertex = 0; vertex < vertices.size(); vertex += vertex_size) {
+        // Normal data starts at position 4
+        size_t const base_index = vertex + 4;
         vec3 normalized = normalize(
-            vec3{terrain.normal_map[normal], terrain.normal_map[normal + 1], terrain.normal_map[normal + 2]});
-        terrain.normal_map[normal] = normalized.x;
-        terrain.normal_map[normal + 1] = normalized.y;
-        terrain.normal_map[normal + 2] = normalized.z;
+            vec3{vertices[base_index], vertices[base_index + 1], vertices[base_index + 2]});
+        vertices[base_index] = normalized.x;
+        vertices[base_index + 1] = normalized.y;
+        vertices[base_index + 2] = normalized.z;
     }
 }
 
@@ -91,6 +75,7 @@ static void generate_chunk_lod(HeightmapTerrain& terrain, HeightmapTerrain::Chun
     options.xoffset = chunk.xoffset;
     options.yoffset = chunk.yoffset;
     chunk.meshes[lod_index] = create_grid_mesh(chunk.width, chunk.length, lod, options);
+    calculate_normals(terrain, chunk.meshes[lod_index]);
 }
 
 static void generate_lod(HeightmapTerrain& terrain, HeightmapTerrainInfo const& info, size_t const lod_index, size_t const lod) {
@@ -99,13 +84,6 @@ static void generate_lod(HeightmapTerrain& terrain, HeightmapTerrainInfo const& 
             size_t const chunk_id = index_2d(x, y, terrain.chunks_x);
             generate_chunk_lod(terrain, terrain.mesh.chunks[chunk_id], info, lod_index, lod);
         }
-    }
-    // Only calculate normals for highest LOD
-    if (lod_index == 0) {
-        terrain.normal_map.resize((lod + 1) * (lod + 1) * 3 * terrain.chunks_x * terrain.chunks_y, 0);
-        terrain.normalmap_width = (lod + 1) * terrain.chunks_x;
-        terrain.normalmap_height = (lod + 1) * terrain.chunks_y;
-        calculate_normals(terrain, info, lod_index, lod);
     }
 }
 
@@ -123,8 +101,7 @@ HeightmapTerrain create_heightmap_terrain(HeightmapTerrainInfo const& info) {
     PerlinNoise noise(info.noise_seed);
     terrain.height_map = noise.get_buffer_float(info.noise_size, info.noise_layers);
 
-    constexpr size_t min_lod = 2;
-    size_t const lod_count = (size_t)std::log2(info.max_lod) - min_lod;
+    size_t const lod_count = std::log2(info.max_lod);
     size_t resolution = info.max_lod;
 
     terrain.max_lod = lod_count;

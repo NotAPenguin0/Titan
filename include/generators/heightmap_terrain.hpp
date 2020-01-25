@@ -30,10 +30,6 @@ struct HeightmapTerrain {
     // Meshes go from high LOD to low LOD
     Mesh mesh;
     std::vector<float> height_map;
-    // Normal map stored as 3 floats for each normal, in xyz order.
-    // This normal map is only computed for the highest LOD to preserve correct normals in lower LOD levels.
-    // Furthermore, the normal map is global to the entire terrain, so all chunks share one, just like the heightmap.
-    std::vector<float> normal_map;
 
     // Misc  info
 
@@ -49,9 +45,6 @@ struct HeightmapTerrain {
 
     size_t heightmap_width;
     size_t heightmap_height;
-
-    size_t normalmap_width;
-    size_t normalmap_height;
 };
 
 struct HeightmapTerrainInfo {

@@ -1,25 +1,27 @@
 #version 450 core
 
 in vec2 TexCoords;
+in vec3 Normal;
 
-layout(binding = 1) uniform sampler2D normal_map;
-layout(binding = 2) uniform sampler2D grass;
-layout(binding = 3) uniform sampler2D moss;
-layout(binding = 4) uniform sampler2D stone;
+layout(binding = 1) uniform sampler2D grass;
+layout(binding = 2) uniform sampler2D moss;
+layout(binding = 3) uniform sampler2D stone;
 
 layout(location = 5) uniform float terrain_scale;
 
 out vec4 FragColor;
 in float Height;
 
-vec3 directional_light(vec3 in_color, vec3 norm) {
-
+vec3 directional_light(vec3 in_color) {
     // hardcoded light in shader :/
     vec3 direction = normalize(-vec3(-0.2, -1, -0.3));
-    float light_ambient = 0.3;
-    float light_diffuse = 10.5;
+    float light_ambient = 0.33;
+    float light_diffuse = 0.93;
     // ambient
     vec3 ambient = light_ambient * in_color;
+  	
+    // diffuse 
+    vec3 norm = normalize(Normal);
 
     float diff = max(dot(norm, direction), 0.0);
     vec3 diffuse = light_diffuse * diff * in_color;  
@@ -28,19 +30,8 @@ vec3 directional_light(vec3 in_color, vec3 norm) {
     return result;
 }
 
-vec3 reinhard_tonemap(vec3 hdr) {
-    vec3 ldr = hdr / (hdr + vec3(1.0));
-    return ldr;
-}
-
-vec3 exposure_tonemap(vec3 hdr, float exposure) {
-    // Exposure tone mapping
-    return vec3(1.0) - exp(-hdr * exposure);
-}
-
 void main() {   
-    vec3 norm = texture(normal_map, TexCoords).rgb;
-    float slope = 1 - dot(vec3(0, 1, 0), norm);
+    float slope = 1 - dot(vec3(0, 1, 0), Normal);
     
     vec3 grass_color = texture(grass, TexCoords * terrain_scale).rgb;
     vec3 moss_color = texture(moss, TexCoords * terrain_scale).rgb;
@@ -60,9 +51,7 @@ void main() {
         color = stone_color;
     }
 
-    color = directional_light(color, norm);
-    color = exposure_tonemap(color, 0.3);
-    color = norm;
-    
+    color = directional_light(color);
+
     FragColor = vec4(color, 1);
 }

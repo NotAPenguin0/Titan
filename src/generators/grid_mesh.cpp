@@ -18,8 +18,8 @@ GridMesh create_grid_mesh(float const width, float const height, size_t const re
     // We will allocate the grid 1 cell larger than requested. Otherwise, we can't complete the final row/column.
     size_t const vertex_count = (resolution + 1) * (resolution + 1);
 
-    // Position + TexCoord
-    size_t const vertex_size = 2 + 2;
+    // Position + TexCoord + Normal
+    size_t const vertex_size = 2 + 2 + 3;
     size_t const vertices_per_quad = 6;
 
     // Allocate memory, make sure to zero initialize the vertices
