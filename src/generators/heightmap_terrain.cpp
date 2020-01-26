@@ -101,9 +101,10 @@ HeightmapTerrain create_heightmap_terrain(HeightmapTerrainInfo const& info) {
     PerlinNoise noise(info.noise_seed);
     terrain.height_map = noise.get_buffer_float(info.noise_size, info.noise_layers);
 
-    size_t const lod_count = std::log2(info.max_lod);
     size_t resolution = info.max_lod;
 
+    constexpr size_t min_lod = 2;
+    size_t const lod_count = (size_t)std::log2(info.max_lod) - min_lod;
     terrain.max_lod = lod_count;
 
     // Calculate the amount of chunks in the terrain

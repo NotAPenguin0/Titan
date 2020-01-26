@@ -11,12 +11,12 @@ layout(location = 3) uniform sampler2D height_map;
 layout(location = 4) uniform float height_scale;
 
 out vec2 TexCoords;
-out vec3 Normal;
+out precise vec3 Normal;
 
 out precise float Height;
 
 void main() {   
-    Normal = iNormal;
+    Normal = normalize((normalize(iNormal) + vec3(1)) / vec3(2));
     TexCoords = iTexCoords;
     precise float height = texture(height_map, TexCoords).x;
     Height = height;

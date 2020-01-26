@@ -157,12 +157,12 @@ void Application::run() {
 
     // Create terrain
 
-    float const grid_size = 25.0f;
+    float const grid_size = 24.0f;
 
     titan::HeightmapTerrainInfo info;
     info.width = grid_size;
     info.length = grid_size;
-    info.height_scale = 25.0f;
+    info.height_scale = 40.0f;
     info.max_lod = 300;
     info.noise_seed = std::random_device()();
     info.noise_size = 4096;
