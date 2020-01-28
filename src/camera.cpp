@@ -23,6 +23,10 @@ glm::vec3 Camera::get_position() const {
     return pos;
 }
 
+glm::vec3 Camera::get_forward() const {
+    return front;
+}
+
 void Camera::do_freelook(float dt) {
     auto mouse = RawInput::get_mouse();
     

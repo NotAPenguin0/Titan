@@ -2,15 +2,19 @@
 
 in vec2 TexCoords;
 in vec3 Normal;
+in float Height;
+in vec3 FragPos;
 
 layout(binding = 1) uniform sampler2D grass;
 layout(binding = 2) uniform sampler2D moss;
 layout(binding = 3) uniform sampler2D stone;
 
 layout(location = 5) uniform float terrain_scale;
+layout(location = 6) uniform vec3 CamPos;
+//layout(location = 7) uniform vec3 CamDir;
 
 out vec4 FragColor;
-in precise float Height;
+
 
 vec3 directional_light(vec3 in_color) {
     // hardcoded light in shader :/
@@ -28,6 +32,14 @@ vec3 directional_light(vec3 in_color) {
     
     vec3 result = ambient + diffuse;
     return result;
+}
+
+vec3 apply_fog(vec3 color, float dist, vec3 cam_pos, vec3 cam_dir) {
+    const float a = 0.00001f; // some parameter
+    const float b = 0.2f; // fog density
+    float fog_amount = (a / b) * exp(-cam_pos.y * b) * (1.0 - exp(-dist * cam_dir.y * b)) / cam_dir.y;
+    const vec3 fog_color = vec3(0.5, 0.6, 0.7);
+    return mix(color, fog_color, fog_amount);
 }
 
 vec3 reinhard_tonemap(vec3 hdr) {
@@ -62,6 +74,7 @@ void main() {
     }
 
     color = directional_light(color);
+    color = apply_fog(color, length(CamPos - FragPos), CamPos, CamPos - FragPos);
     color = exposure_tonemap(color, 0.3);
 
     FragColor = vec4(color, 1);

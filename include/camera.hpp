@@ -13,6 +13,7 @@ public:
     glm::mat4 get_view_matrix();
 
     glm::vec3 get_position() const;
+    glm::vec3 get_forward() const;
 
     float mouse_sensitivity = 0.05f;
     float move_speed = 0.05f;

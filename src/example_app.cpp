@@ -269,6 +269,8 @@ void Application::run() {
         glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(projection));
 
         glUniform1f(5, grid_size);
+        glUniform3fv(6, 1, glm::value_ptr(camera.get_position()));
+//        glUniform3fv(7, 1, glm::value_ptr(camera.get_forward()));
 
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, grass);
