@@ -16,7 +16,7 @@ out vec3 Normal;
 out precise float Height;
 
 void main() {   
-    Normal = normalize((normalize(iNormal) + vec3(1)) / vec3(2));
+    Normal = iNormal;
     TexCoords = iTexCoords;
     precise float height = texture(height_map, TexCoords).x;
     Height = height;

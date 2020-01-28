@@ -16,7 +16,7 @@ vec3 directional_light(vec3 in_color) {
     // hardcoded light in shader :/
     vec3 direction = normalize(-vec3(-0.2, -1, -0.3));
     float light_ambient = 0.3;
-    float light_diffuse = 10;
+    float light_diffuse = 10.5;
     // ambient
     vec3 ambient = light_ambient * in_color;
   	
@@ -63,7 +63,6 @@ void main() {
 
     color = directional_light(color);
     color = exposure_tonemap(color, 0.3);
-    color = vec3(Normal);
 
     FragColor = vec4(color, 1);
 }

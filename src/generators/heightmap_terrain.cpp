@@ -6,10 +6,6 @@
 #include <thread>
 #include <iostream>
 
-#include <fstream>
-
-FILE* log_file = nullptr;
-
 namespace titan {
 
 using namespace math;
@@ -23,19 +19,46 @@ static vec3 calc_normal(vec3 const e1, vec3 const e2) {
 }
 
 static float sample_height(HeightmapTerrain const& terrain, float x, float y) {
-//    x = std::min(1.0f, x);
-//    y = std::min(1.0f, y);
-    size_t sx = x * (terrain.heightmap_width - 0.00001f);
-    size_t sy = y * (terrain.heightmap_height - 0.00001f);
-    if (!log_file) {
-        log_file = fopen("log.txt", "w");
-    }
-    fprintf(log_file, "%f, %f: %zu, %zu\n", x, y, sx, sy);
-    fflush(log_file);
     size_t const index = index_2d(
-        x * (terrain.heightmap_width - 0.000001f), 
-        y * (terrain.heightmap_height - 0.000001f), terrain.heightmap_width);
+        x * ((float)terrain.heightmap_width - 0.001f), 
+        y * ((float)terrain.heightmap_height - 0.001f), terrain.heightmap_width);
     return terrain.height_map[index];
+}
+
+static float sample_height_texel(HeightmapTerrain const& terrain, size_t x, size_t y) {
+    return terrain.height_map[index_2d(x, y, terrain.heightmap_width)];
+}
+
+static float sample_height_linear(HeightmapTerrain const& terrain, float x, float y) {
+    float const sample_interval_x = 1.0f / terrain.heightmap_width;
+    float const sample_interval_y = 1.0f / terrain.heightmap_height;
+
+    float const sample_x = x * (terrain.heightmap_width - 1.0f);
+    float const sample_y = y * (terrain.heightmap_height - 1.0f);
+
+    float const dx = sample_x - std::floor(sample_x);
+    float const dy = sample_y - std::floor(sample_y);
+
+    float const lower_sample_x = std::floor(sample_x);
+    float const higher_sample_x = std::ceil(sample_x);
+
+    float const lower_sample_y = std::floor(sample_y);
+    float const higher_sample_y = std::ceil(sample_y);
+
+    // Bilinear interpolation (https://en.wikipedia.org/wiki/Bilinear_interpolation)
+    float height_a = lerp(
+        sample_height_texel(terrain, lower_sample_x, lower_sample_y),
+        sample_height_texel(terrain, higher_sample_x, lower_sample_y),
+        dx
+    );
+
+    float height_b = lerp(
+        sample_height_texel(terrain, lower_sample_x, higher_sample_y),
+        sample_height_texel(terrain, higher_sample_x, higher_sample_y),
+        dx
+    );
+
+    return lerp(height_a, height_b, dy);
 }
 
 static void calculate_normals(HeightmapTerrain& terrain, GridMesh& mesh) {
@@ -49,9 +72,9 @@ static void calculate_normals(HeightmapTerrain& terrain, GridMesh& mesh) {
         size_t const v3_index = vertex_size * indices[face + 2];
 
         // Texcoords are at position 2 and 3 of a vertex
-        float const v1_height = terrain.height_scale * sample_height(terrain, vertices[v1_index + 2], vertices[v1_index + 3]);
-        float const v2_height = terrain.height_scale * sample_height(terrain, vertices[v2_index + 2], vertices[v2_index + 3]);
-        float const v3_height = terrain.height_scale * sample_height(terrain, vertices[v3_index + 2], vertices[v3_index + 3]);
+        float const v1_height = terrain.height_scale * sample_height_linear(terrain, vertices[v1_index + 2], vertices[v1_index + 3]);
+        float const v2_height = terrain.height_scale * sample_height_linear(terrain, vertices[v2_index + 2], vertices[v2_index + 3]);
+        float const v3_height = terrain.height_scale * sample_height_linear(terrain, vertices[v3_index + 2], vertices[v3_index + 3]);
 
         vec3 v1 = vec3{vertices[v1_index], v1_height, vertices[v1_index + 1]};
         vec3 v2 = vec3{vertices[v2_index], v2_height, vertices[v2_index + 1]};
@@ -60,14 +83,9 @@ static void calculate_normals(HeightmapTerrain& terrain, GridMesh& mesh) {
         vec3 e1 = v2 - v1;
         vec3 e2 = v3 - v1;
 
- /*       vec3 normal = calculate_normal(
-            vec3{vertices[v1_index], v1_height, vertices[v1_index + 1]},
-            vec3{vertices[v2_index], v2_height, vertices[v2_index + 1]},
-            vec3{vertices[v3_index], v3_height, vertices[v3_index + 1]});
-            */
         vec3 normal = cross(e1, e2);
 
-        // Add calculated normals to vertex data
+        // Add calculated normal to vertex data
 
         auto add_normal = [&vertices, &normal](size_t const index) {
             vertices[index + 4] += normal.x;
@@ -161,7 +179,9 @@ HeightmapTerrain create_heightmap_terrain(HeightmapTerrainInfo const& info) {
             chunk.meshes.resize(terrain.max_lod);
 
             chunk.height_at_center = terrain.height_scale * 1;
-//                                     sample_height(terrain, chunk.xoffset + chunk.width / 2.0f, chunk.yoffset + chunk.length / 2.0f);
+                                     sample_height(terrain, 
+                                                  (chunk.xoffset + chunk.width / 2.0f) / terrain.width, 
+                                                  (chunk.yoffset + chunk.length / 2.0f) / terrain.length);
         }
     }
 

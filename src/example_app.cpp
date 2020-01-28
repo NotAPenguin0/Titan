@@ -166,9 +166,9 @@ void Application::run() {
     info.width = grid_size;
     info.length = grid_size;
     info.height_scale = 40.0f;
-    info.max_lod = 32;
+    info.max_lod = 300;
     info.noise_seed = std::random_device()();
-    info.noise_size = 4;
+    info.noise_size = 4096;
     info.noise_layers = 4;
     info.noise_persistence = 0.5f;
 
