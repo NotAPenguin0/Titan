@@ -6,6 +6,10 @@
 #include <thread>
 #include <iostream>
 
+#include <fstream>
+
+FILE* log_file = nullptr;
+
 namespace titan {
 
 using namespace math;
@@ -14,10 +18,23 @@ static vec3 calculate_normal(vec3 const v1, vec3 const v2, vec3 const v3) {
     return cross(v1, v2) + cross(v2, v3) + cross(v3, v1);
 }
 
+static vec3 calc_normal(vec3 const e1, vec3 const e2) {
+    return cross(e1, e2);
+}
+
 static float sample_height(HeightmapTerrain const& terrain, float x, float y) {
-    x = std::min(1.0f, x);
-    y = std::min(1.0f, y);
-    size_t const index = index_2d(x * (terrain.heightmap_width - 1), y * (terrain.heightmap_height - 1), terrain.heightmap_width);
+//    x = std::min(1.0f, x);
+//    y = std::min(1.0f, y);
+    size_t sx = x * (terrain.heightmap_width - 0.00001f);
+    size_t sy = y * (terrain.heightmap_height - 0.00001f);
+    if (!log_file) {
+        log_file = fopen("log.txt", "w");
+    }
+    fprintf(log_file, "%f, %f: %zu, %zu\n", x, y, sx, sy);
+    fflush(log_file);
+    size_t const index = index_2d(
+        x * (terrain.heightmap_width - 0.000001f), 
+        y * (terrain.heightmap_height - 0.000001f), terrain.heightmap_width);
     return terrain.height_map[index];
 }
 
@@ -36,10 +53,19 @@ static void calculate_normals(HeightmapTerrain& terrain, GridMesh& mesh) {
         float const v2_height = terrain.height_scale * sample_height(terrain, vertices[v2_index + 2], vertices[v2_index + 3]);
         float const v3_height = terrain.height_scale * sample_height(terrain, vertices[v3_index + 2], vertices[v3_index + 3]);
 
-        vec3 normal = calculate_normal(
+        vec3 v1 = vec3{vertices[v1_index], v1_height, vertices[v1_index + 1]};
+        vec3 v2 = vec3{vertices[v2_index], v2_height, vertices[v2_index + 1]};
+        vec3 v3 = vec3{vertices[v3_index], v3_height, vertices[v3_index + 1]};
+
+        vec3 e1 = v2 - v1;
+        vec3 e2 = v3 - v1;
+
+ /*       vec3 normal = calculate_normal(
             vec3{vertices[v1_index], v1_height, vertices[v1_index + 1]},
             vec3{vertices[v2_index], v2_height, vertices[v2_index + 1]},
             vec3{vertices[v3_index], v3_height, vertices[v3_index + 1]});
+            */
+        vec3 normal = cross(e1, e2);
 
         // Add calculated normals to vertex data
 
@@ -111,8 +137,8 @@ HeightmapTerrain create_heightmap_terrain(HeightmapTerrainInfo const& info) {
 
     constexpr float chunk_size = 8.0f;
 
-    size_t const chunks_x = info.width / chunk_size + 1;
-    size_t const chunks_y = info.length / chunk_size + 1;    
+    size_t const chunks_x = info.width / chunk_size;
+    size_t const chunks_y = info.length / chunk_size;    
 
     size_t const chunk_count = chunks_x * chunks_y;
     terrain.mesh.chunks.resize(chunk_count);
@@ -132,17 +158,10 @@ HeightmapTerrain create_heightmap_terrain(HeightmapTerrainInfo const& info) {
             chunk.width = terrain.chunk_size;
             chunk.length = terrain.chunk_size;
 
-            if (x == terrain.chunks_x - 1) {
-                chunk.width = std::fmod(terrain.width, terrain.chunk_size);
-            }
-            if (y == terrain.chunks_y - 1) {
-                chunk.length = std::fmod(terrain.length, terrain.chunk_size);
-            }
-
             chunk.meshes.resize(terrain.max_lod);
 
-            chunk.height_at_center = terrain.height_scale * 
-                                     sample_height(terrain, chunk.xoffset + chunk.width / 2.0f, chunk.yoffset + chunk.length / 2.0f);
+            chunk.height_at_center = terrain.height_scale * 1;
+//                                     sample_height(terrain, chunk.xoffset + chunk.width / 2.0f, chunk.yoffset + chunk.length / 2.0f);
         }
     }
 

@@ -11,7 +11,7 @@ layout(location = 3) uniform sampler2D height_map;
 layout(location = 4) uniform float height_scale;
 
 out vec2 TexCoords;
-out precise vec3 Normal;
+out vec3 Normal;
 
 out precise float Height;
 

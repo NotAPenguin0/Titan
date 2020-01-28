@@ -75,6 +75,9 @@ Application::Application(size_t const width, size_t const height) {
     glDebugMessageCallback(gl_error_callback, nullptr);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
     glDebugMessageControl(GL_DONT_CARE, GL_DEBUG_TYPE_PERFORMANCE, GL_DONT_CARE, 0, nullptr, GL_FALSE);
+
+    glEnable(GL_BLEND);
+    glEnable(GL_DEPTH_TEST);
 }
 
 Application::~Application() {
@@ -150,7 +153,7 @@ void Application::run() {
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 500.0f);
     glm::mat4 model = glm::mat4(1.0);
 
-    model = glm::translate(model, glm::vec3(0, 0, 0));
+//    model = glm::translate(model, glm::vec3(0, 0, 0));
     model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1, 0, 0));
 
     glm::mat4 inv_model = glm::inverse(model);
@@ -163,9 +166,9 @@ void Application::run() {
     info.width = grid_size;
     info.length = grid_size;
     info.height_scale = 40.0f;
-    info.max_lod = 300;
+    info.max_lod = 32;
     info.noise_seed = std::random_device()();
-    info.noise_size = 4096;
+    info.noise_size = 4;
     info.noise_layers = 4;
     info.noise_persistence = 0.5f;
 
