@@ -160,13 +160,13 @@ void Application::run() {
 
     // Create terrain
 
-    float const grid_size = 24.0f;
+    float const grid_size = 80.0f;
 
     titan::HeightmapTerrainInfo info;
     info.width = grid_size;
     info.length = grid_size;
-    info.height_scale = 40.0f;
-    info.max_lod = 300;
+    info.height_scale = 100.0f;
+    info.max_lod = 100;
     info.noise_seed = std::random_device()();
     info.noise_size = 4096;
     info.noise_layers = 4;
@@ -269,7 +269,7 @@ void Application::run() {
         glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(projection));
 
         glUniform1f(5, grid_size);
-        glUniform3fv(6, 1, glm::value_ptr(camera.get_position()));
+//        glUniform3fv(6, 1, glm::value_ptr(camera.get_position()));
 //        glUniform3fv(7, 1, glm::value_ptr(camera.get_forward()));
 
         glActiveTexture(GL_TEXTURE1);

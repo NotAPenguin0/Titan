@@ -15,6 +15,8 @@ out vec2 TexCoords;
 out vec3 Normal;
 out vec3 FragPos;
 
+out vec4 CamPosViewSpace;
+
 out float Height;
 
 void main() {   
@@ -22,6 +24,7 @@ void main() {
     TexCoords = iTexCoords;
     float height = texture(height_map, TexCoords).x;
     Height = height;
+    CamPosViewSpace = view * model * vec4(iPos.xy, (1 - height) * height_scale, 1.0);
     FragPos = vec3(model * vec4(iPos.xy, height, 1));
     gl_Position = projection * view * model * vec4(iPos.xy, (1 - height) * height_scale, 1.0);
 }
