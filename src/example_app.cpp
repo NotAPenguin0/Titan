@@ -98,6 +98,50 @@ static void update_lod(titan::HeightmapTerrain& terrain, size_t new_lod, unsigne
 }
 */
 
+static constexpr float skybox_verts[] = {
+    // positions          
+    -1.0f,  1.0f, -1.0f,
+    -1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+    -1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f
+};
 
 void Application::run() {
 
@@ -144,16 +188,37 @@ void Application::run() {
         "data/shaders/grid.vert",
         "data/shaders/basic.frag");
 
+    unsigned int skybox_shader = titan::renderer::load_shader(
+        "data/shaders/skybox.vert",
+        "data/shaders/skybox.frag"
+    );
+
     unsigned int grass = titan::renderer::load_texture("data/textures/grass.png");
     unsigned int moss = titan::renderer::load_texture("data/textures/moss.png");
     unsigned int stone = titan::renderer::load_texture("data/textures/stone.png");
+
+    unsigned int skybox = titan::renderer::load_cubemap("data/skybox/graycloud.txt");
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+    // Create skybox vao
+    unsigned int skybox_vao, skybox_vbo;
+    glGenVertexArrays(1, &skybox_vao);
+    glGenBuffers(1, &skybox_vbo);
+
+    glBindVertexArray(skybox_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, skybox_vbo);
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skybox_verts), skybox_verts, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribFormat(0, 3, GL_FLOAT, GL_FALSE, 0);
+    glBindVertexBuffer(0, skybox_vbo, 0, 3 * sizeof(float));
+    glVertexAttribBinding(0, 0);
 
     // Create transformation matrices
 
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 500.0f);
     glm::mat4 model = glm::mat4(1.0);
 
-//    model = glm::translate(model, glm::vec3(0, 0, 0));
     model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1, 0, 0));
 
     glm::mat4 inv_model = glm::inverse(model);
@@ -262,6 +327,21 @@ void Application::run() {
 
         glm::mat4 view = camera.get_view_matrix();
 
+        // Render skybox
+        glDepthMask(0x00);
+        glDepthFunc(GL_LEQUAL);
+        glm::mat4 skybox_view = glm::mat4(glm::mat3(view));
+        glBindVertexArray(skybox_vao);
+        glUseProgram(skybox_shader);
+        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(projection));
+        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(skybox_view));
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, skybox);
+        glUniform1i(2, 0);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glDepthFunc(GL_LESS);
+        glDepthMask(0xFF);
+
         glUseProgram(shader);
 
         glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(model));
@@ -285,6 +365,8 @@ void Application::run() {
         glUniform1f(4, terrain.height_scale);
 
         titan::renderer::render_terrain(render_info);
+
+
 
         glfwPollEvents();
         glfwSwapBuffers(win);

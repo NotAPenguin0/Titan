@@ -6,6 +6,7 @@
 #include <fstream>
 #include <string>
 #include <stdexcept>
+#include <iostream>
 
 namespace titan::renderer {
 
@@ -93,6 +94,41 @@ unsigned int load_texture(const char* path) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(data);
+    
+    return texture;
+}
+
+unsigned int load_cubemap(const char* descriptor_path) {   
+    std::ifstream paths(descriptor_path);
+    if (!paths.good()) { return 0; }
+
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+
+    for (size_t face = 0; face < 6; ++face) {
+        std::string path;
+        std::string flip;
+        paths >> path;
+        paths >> flip;
+        stbi_set_flip_vertically_on_load(flip == "true");
+        int w, h, channels;
+        unsigned char* data = stbi_load(path.c_str(), &w, &h, &channels, 4);
+        if (!data) {
+            std::cout << "Oof\n";
+        }
+        else {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        }
+
+        stbi_image_free(data);
+    }
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
     
     return texture;
 }

@@ -10,6 +10,7 @@ void set_wireframe(bool wireframe);
 unsigned int load_shader(const char* vtx_path, const char* frag_path, const char* geom_path = nullptr);
 
 unsigned int load_texture(const char* path);
+unsigned int load_cubemap(const char* descriptor_path);
 
 unsigned int texture_from_buffer(unsigned char const* buf, size_t w, size_t h);
 unsigned int texture_from_buffer(float const* buf, size_t w, size_t h);

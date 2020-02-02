@@ -188,6 +188,7 @@ void render_terrain(TerrainRenderInfo const& terrain) {
     // Bind noisemap
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, terrain.height_map);
+    glBindVertexArray(terrain.vao);
     // Render all chunks
     size_t const chunk_count = terrain.chunks.size();
     for (size_t i = 0; i < chunk_count; ++i) {
